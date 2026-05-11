@@ -2,7 +2,7 @@
 
 import { Pin } from '@/lib/supabase'
 import { motion, AnimatePresence } from 'framer-motion'
-import { format, parseISO } from 'date-fns'
+import { format, parseISO, differenceInDays, differenceInHours } from 'date-fns'
 import { formatDistanceToNow } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { MapPin, Utensils, Bed, Camera, Droplets, ChevronUp, ChevronDown, ImageIcon, Heart, ThumbsUp, Smile, Clock } from 'lucide-react'
@@ -99,7 +99,10 @@ export default function Timeline({ pins, onSelectPin }: TimelineProps) {
                         {pin.scheduled_at && (
                           <span className="text-[10px] bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded flex items-center gap-0.5 font-bold">
                             <Clock size={10} />
-                            予定 {format(parseISO(pin.scheduled_at), 'HH:mm')}
+                            {differenceInHours(parseISO(pin.scheduled_at), new Date()) >= 24 
+                              ? `あと ${differenceInDays(parseISO(pin.scheduled_at), new Date()) + 1}日`
+                              : `予定 ${format(parseISO(pin.scheduled_at), 'HH:mm')}`
+                            }
                           </span>
                         )}
                       </div>
@@ -126,7 +129,10 @@ export default function Timeline({ pins, onSelectPin }: TimelineProps) {
                           {pin.scheduled_at && (
                             <span className="text-[10px] bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded flex items-center gap-0.5 font-bold">
                               <Clock size={10} />
-                              予定 {format(parseISO(pin.scheduled_at), 'HH:mm')}
+                              {differenceInHours(parseISO(pin.scheduled_at), new Date()) >= 24 
+                                ? `あと ${differenceInDays(parseISO(pin.scheduled_at), new Date()) + 1}日`
+                                : `予定 ${format(parseISO(pin.scheduled_at), 'HH:mm')}`
+                              }
                             </span>
                           )}
                         </div>
