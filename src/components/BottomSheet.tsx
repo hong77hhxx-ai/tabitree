@@ -104,7 +104,12 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave }: BottomShee
   }
 
   const handleSave = () => {
-    onSave(formData)
+    const dataToSave = { ...formData }
+    if (dataToSave.scheduled_at) {
+      // ローカル時間をISO文字列に変換（タイムゾーン情報を含める）
+      dataToSave.scheduled_at = new Date(dataToSave.scheduled_at).toISOString()
+    }
+    onSave(dataToSave)
   }
 
   const handleSuggest = async () => {
@@ -379,7 +384,7 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave }: BottomShee
                     </div>
                     <input
                       type="datetime-local"
-                      value={formData.scheduled_at ? formData.scheduled_at.slice(0, 16) : ''}
+                      value={formData.scheduled_at ? format(new Date(formData.scheduled_at), "yyyy-MM-dd'T'HH:mm") : ''}
                       onChange={e => handleChange('scheduled_at', e.target.value)}
                       className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:bg-white transition-all text-sm text-gray-800"
                     />
