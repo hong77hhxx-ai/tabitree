@@ -3,7 +3,7 @@
 import { Pin } from '@/lib/supabase'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Sparkles, Calendar, Clock, AlertCircle } from 'lucide-react'
-import { format, differenceInDays, isSameDay, isAfter, parseISO } from 'date-fns'
+import { format, differenceInDays, differenceInHours, isSameDay, isAfter, parseISO } from 'date-fns'
 import { ja } from 'date-fns/locale'
 
 type CountdownWidgetProps = {
@@ -23,6 +23,7 @@ export default function CountdownWidget({ pins }: CountdownWidgetProps) {
   const now = new Date()
   
   const daysUntil = differenceInDays(tripDate, now)
+  const hoursUntil = differenceInHours(tripDate, now)
   const isTripDay = isSameDay(tripDate, now) || (isAfter(now, tripDate) && isSameDay(now, parseISO(scheduledPins[scheduledPins.length - 1].scheduled_at!)))
 
   // 次の予定（今日の場合）
@@ -55,7 +56,12 @@ export default function CountdownWidget({ pins }: CountdownWidgetProps) {
             <div>
               <div className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider">Trip Countdown</div>
               <div className="text-sm font-bold text-gray-800">
-                旅行まであと <span className="text-indigo-600 text-lg">{daysUntil + 1}</span> 日
+                旅行まであと <span className="text-indigo-600 text-lg">
+                  {hoursUntil > 0 && hoursUntil < 24 
+                    ? `${hoursUntil} 時間` 
+                    : `${daysUntil + 1} 日`
+                  }
+                </span>
               </div>
             </div>
           )}
