@@ -16,6 +16,7 @@ export type Pin = {
   status: 'Planned' | 'Confirmed' | 'Visited'
   photo_url: string | null
   reactions: Record<string, number> | null
+  scheduled_at: string | null
   created_at: string
 }
 

@@ -2,9 +2,10 @@
 
 import { Pin } from '@/lib/supabase'
 import { motion, AnimatePresence } from 'framer-motion'
+import { format, parseISO } from 'date-fns'
 import { formatDistanceToNow } from 'date-fns'
 import { ja } from 'date-fns/locale'
-import { MapPin, Utensils, Bed, Camera, Droplets, ChevronUp, ChevronDown, ImageIcon, Heart, ThumbsUp, Smile } from 'lucide-react'
+import { MapPin, Utensils, Bed, Camera, Droplets, ChevronUp, ChevronDown, ImageIcon, Heart, ThumbsUp, Smile, Clock } from 'lucide-react'
 import { useState } from 'react'
 
 type TimelineProps = {
@@ -93,7 +94,15 @@ export default function Timeline({ pins, onSelectPin }: TimelineProps) {
                       {getCategoryIcon(pin.category)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-bold text-gray-800 truncate">{pin.title}</div>
+                      <div className="text-sm font-bold text-gray-800 truncate flex items-center gap-2">
+                        {pin.title}
+                        {pin.scheduled_at && (
+                          <span className="text-[10px] bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded flex items-center gap-0.5 font-bold">
+                            <Clock size={10} />
+                            {format(parseISO(pin.scheduled_at), 'HH:mm')}
+                          </span>
+                        )}
+                      </div>
                       <div className="text-xs text-gray-500">
                         {formatDistanceToNow(new Date(pin.created_at), { addSuffix: true, locale: ja })}
                       </div>

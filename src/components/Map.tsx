@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useRef } from 'react'
-import Map, { Marker, MapLayerMouseEvent } from 'react-map-gl/maplibre'
+import { useState, useRef, useEffect } from 'react'
+import Map, { Marker, MapLayerMouseEvent, MapRef } from 'react-map-gl/maplibre'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { Pin } from '@/lib/supabase'
-import { MapPin, Utensils, Bed, Camera, Droplets } from 'lucide-react'
+import { MapPin, Utensils, Bed, Camera, Droplets, Crosshair } from 'lucide-react'
 
 // OpenStreetMapのラスタタイルをMapLibre用に設定
 const mapStyle = {
@@ -41,7 +41,38 @@ export default function MapComponent({ pins, onAddPin, onSelectPin }: MapCompone
     zoom: 12
   })
   
+  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null)
+  const mapRef = useRef<MapRef>(null)
   const longPressTimer = useRef<NodeJS.Timeout | null>(null)
+
+  // 現在地の監視
+  useEffect(() => {
+    if ('geolocation' in navigator) {
+      const watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          setUserLocation({
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude
+          })
+        },
+        (err) => console.error('GPS Error:', err),
+        { enableHighAccuracy: true }
+      )
+      return () => navigator.geolocation.clearWatch(watchId)
+    }
+  }, [])
+
+  const handleMyLocation = () => {
+    if (userLocation) {
+      mapRef.current?.flyTo({
+        center: [userLocation.lng, userLocation.lat],
+        zoom: 15,
+        duration: 1000
+      })
+    } else {
+      alert('現在地を取得中です。ブラウザの位置情報設定を確認してください。')
+    }
+  }
   
   const handleTouchStart = (e: any) => {
     if (e.originalEvent.touches && e.originalEvent.touches.length === 1) {
@@ -88,6 +119,7 @@ export default function MapComponent({ pins, onAddPin, onSelectPin }: MapCompone
     <div className="w-full h-full flex-1 relative">
       <Map
         {...viewState}
+        ref={mapRef}
         onMove={evt => setViewState(evt.viewState)}
         mapStyle={mapStyle}
         style={{ width: '100%', height: '100%' }}
@@ -133,7 +165,26 @@ export default function MapComponent({ pins, onAddPin, onSelectPin }: MapCompone
             </div>
           </Marker>
         ))}
+
+        {/* 現在地マーカー */}
+        {userLocation && (
+          <Marker
+            longitude={userLocation.lng}
+            latitude={userLocation.lat}
+            anchor="center"
+          >
+            <div className="gps-marker" />
+          </Marker>
+        )}
       </Map>
+
+      {/* 現在地ボタン */}
+      <button
+        onClick={handleMyLocation}
+        className="absolute bottom-24 right-4 bg-white p-3 rounded-full shadow-lg hover:bg-gray-50 active:scale-95 transition-all z-10 border border-gray-100"
+      >
+        <Crosshair size={24} className="text-indigo-600" />
+      </button>
     </div>
   )
 }

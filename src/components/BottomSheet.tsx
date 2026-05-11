@@ -2,7 +2,7 @@
 
 import { Pin, uploadPhoto } from '@/lib/supabase'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Save, MapPin, Utensils, Bed, Camera, Droplets, Sparkles, Loader2, ImagePlus, CheckCircle, Heart, ThumbsUp, Smile } from 'lucide-react'
+import { X, Save, MapPin, Utensils, Bed, Camera, Droplets, Sparkles, Loader2, ImagePlus, CheckCircle, Heart, ThumbsUp, Smile, Navigation, Calendar, Clock } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 
 type BottomSheetProps = {
@@ -45,6 +45,7 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave }: BottomShee
         notes: pin.notes || '',
         photo_url: pin.photo_url || null,
         reactions: pin.reactions || {},
+        scheduled_at: pin.scheduled_at || null,
       })
       setSuggestions([])
     }
@@ -82,6 +83,24 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave }: BottomShee
 
   const handleCheckIn = () => {
     handleChange('status', 'Visited')
+  }
+
+  const handleNavigate = () => {
+    const lat = pin?.lat || formData.lat
+    const lng = pin?.lng || formData.lng
+    if (!lat || !lng) return
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`
+    window.open(url, '_blank')
+  }
+
+  const handleAddToCalendar = () => {
+    if (!formData.title || !formData.scheduled_at) return
+    
+    const startTime = new Date(formData.scheduled_at).toISOString().replace(/-|:|\.\d\d\d/g, "")
+    const endTime = new Date(new Date(formData.scheduled_at).getTime() + 3600000).toISOString().replace(/-|:|\.\d\d\d/g, "")
+    
+    const url = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(formData.title)}&dates=${startTime}/${endTime}&details=${encodeURIComponent(formData.notes || '')}&location=${pin?.lat},${pin?.lng}`
+    window.open(url, '_blank')
   }
 
   const handleSave = () => {
@@ -150,9 +169,20 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave }: BottomShee
                 <MapPin className="text-[var(--color-primary)]" />
                 {pin?.id ? 'スポットを編集' : '新しいスポット'}
               </h2>
-              <button onClick={onClose} className="p-2 bg-gray-100 rounded-full text-gray-500 hover:bg-gray-200">
-                <X size={20} />
-              </button>
+              <div className="flex items-center gap-2">
+                {pin?.id && (
+                  <button 
+                    onClick={handleNavigate}
+                    className="p-2 bg-indigo-50 text-indigo-600 rounded-full hover:bg-indigo-100 transition-colors flex items-center gap-1 px-3 text-xs font-bold shadow-sm"
+                  >
+                    <Navigation size={14} />
+                    ナビする
+                  </button>
+                )}
+                <button onClick={onClose} className="p-2 bg-gray-100 rounded-full text-gray-500 hover:bg-gray-200">
+                  <X size={20} />
+                </button>
+              </div>
             </div>
 
             <div className="space-y-4 mt-2">
@@ -339,6 +369,33 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave }: BottomShee
                   </div>
                 </div>
               )}
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-600 mb-1">予定日時</label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                      <Calendar size={16} />
+                    </div>
+                    <input
+                      type="datetime-local"
+                      value={formData.scheduled_at ? formData.scheduled_at.slice(0, 16) : ''}
+                      onChange={e => handleChange('scheduled_at', e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:bg-white transition-all text-sm text-gray-800"
+                    />
+                  </div>
+                  {formData.scheduled_at && (
+                    <button
+                      onClick={handleAddToCalendar}
+                      className="px-4 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-xl hover:bg-indigo-100 transition-all flex items-center gap-1 text-xs font-bold"
+                      title="Googleカレンダーに追加"
+                    >
+                      <Calendar size={14} />
+                      追加
+                    </button>
+                  )}
+                </div>
+              </div>
 
               <div>
                 <label className="block text-sm font-semibold text-gray-600 mb-1">メモ (任意)</label>

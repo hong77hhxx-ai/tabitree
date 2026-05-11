@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic'
 import { supabase, Pin } from '@/lib/supabase'
 import BottomSheet from '@/components/BottomSheet'
 import Timeline from '@/components/Timeline'
+import CountdownWidget from '@/components/CountdownWidget'
 
 // Disable SSR for MapLibre
 const MapComponent = dynamic(() => import('@/components/Map'), { ssr: false })
@@ -77,6 +78,7 @@ export default function MapPage() {
           notes: pinData.notes,
           photo_url: pinData.photo_url,
           reactions: pinData.reactions,
+          scheduled_at: pinData.scheduled_at,
         })
         .eq('id', pinData.id)
       
@@ -95,6 +97,7 @@ export default function MapPage() {
           notes: pinData.notes,
           photo_url: pinData.photo_url,
           reactions: pinData.reactions,
+          scheduled_at: pinData.scheduled_at,
         }])
       
       if (error) console.error(error)
@@ -106,6 +109,7 @@ export default function MapPage() {
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-gray-100 flex flex-col">
+      <CountdownWidget pins={pins} />
       <Timeline pins={pins} onSelectPin={handleSelectPin} />
       
       <MapComponent 
