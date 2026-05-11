@@ -4,6 +4,7 @@ import { Pin, uploadPhoto } from '@/lib/supabase'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Save, MapPin, Utensils, Bed, Camera, Droplets, Sparkles, Loader2, ImagePlus, CheckCircle, Heart, ThumbsUp, Smile, Navigation, Calendar, Clock } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
+import { format } from 'date-fns'
 
 type BottomSheetProps = {
   isOpen: boolean
