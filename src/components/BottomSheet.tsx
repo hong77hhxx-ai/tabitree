@@ -2,7 +2,7 @@
 
 import { Pin, uploadPhoto } from '@/lib/supabase'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Save, MapPin, Utensils, Bed, Camera, Droplets, Sparkles, Loader2, ImagePlus, CheckCircle, Heart, ThumbsUp, Smile, Navigation, Calendar, Clock } from 'lucide-react'
+import { X, Save, MapPin, Utensils, Bed, Camera, Droplets, Sparkles, Loader2, ImagePlus, CheckCircle, Heart, ThumbsUp, Smile, Navigation, Calendar, Clock, Trash2 } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { format } from 'date-fns'
 
@@ -11,6 +11,7 @@ type BottomSheetProps = {
   onClose: () => void
   pin: Partial<Pin> | null
   onSave: (pin: Partial<Pin>) => void
+  onDelete: (pinId: string) => void
 }
 
 const CATEGORIES = [
@@ -22,7 +23,7 @@ const CATEGORIES = [
 
 const STATUSES = ['Planned', 'Confirmed', 'Visited']
 
-export default function BottomSheet({ isOpen, onClose, pin, onSave }: BottomSheetProps) {
+export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete }: BottomSheetProps) {
   const [formData, setFormData] = useState<Partial<Pin>>({})
   const [suggestions, setSuggestions] = useState<any[]>([])
   const [isSuggesting, setIsSuggesting] = useState(false)
@@ -111,6 +112,13 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave }: BottomShee
       dataToSave.scheduled_at = new Date(dataToSave.scheduled_at).toISOString()
     }
     onSave(dataToSave)
+  }
+
+  const handleDelete = () => {
+    if (!pin?.id) return
+    if (window.confirm('このスポットを削除してもよろしいですか？')) {
+      onDelete(pin.id)
+    }
   }
 
   const handleSuggest = async () => {
@@ -415,14 +423,25 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave }: BottomShee
               </div>
             </div>
 
-            <button
-              onClick={handleSave}
-              disabled={!formData.title}
-              className="mt-4 w-full bg-[var(--color-primary)] hover:opacity-90 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-            >
-              <Save size={20} />
-              保存する
-            </button>
+            <div className="flex gap-2 mt-4">
+              {pin?.id && (
+                <button
+                  onClick={handleDelete}
+                  className="px-4 py-4 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-100 transition-all flex items-center justify-center shadow-sm"
+                  title="削除する"
+                >
+                  <Trash2 size={20} />
+                </button>
+              )}
+              <button
+                onClick={handleSave}
+                disabled={!formData.title}
+                className="flex-1 bg-[var(--color-primary)] hover:opacity-90 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+              >
+                <Save size={20} />
+                保存する
+              </button>
+            </div>
           </motion.div>
         </>
       )}

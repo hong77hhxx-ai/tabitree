@@ -26,6 +26,9 @@ export default function CountdownWidget({ pins }: CountdownWidgetProps) {
   const hoursUntil = differenceInHours(tripDate, now)
   const isTripDay = isSameDay(tripDate, now) || (isAfter(now, tripDate) && isSameDay(now, parseISO(scheduledPins[scheduledPins.length - 1].scheduled_at!)))
 
+  // 最初の予定時刻を過ぎるまではカウントダウンモード
+  const showCountdown = hoursUntil > 0
+
   // 次の予定（今日の場合）
   const nextPin = scheduledPins.find(p => isAfter(parseISO(p.scheduled_at!), now))
 
@@ -36,12 +39,12 @@ export default function CountdownWidget({ pins }: CountdownWidgetProps) {
         animate={{ y: 0, opacity: 1 }}
         className="bg-white/90 backdrop-blur-md rounded-2xl shadow-lg border border-white/50 p-3 flex items-center gap-3"
       >
-        <div className={`p-2 rounded-xl flex-shrink-0 ${isTripDay ? 'bg-orange-100 text-orange-600' : 'bg-indigo-100 text-indigo-600'}`}>
-          {isTripDay ? <Sparkles size={20} className="animate-pulse" /> : <Calendar size={20} />}
+        <div className={`p-2 rounded-xl flex-shrink-0 ${!showCountdown && isTripDay ? 'bg-orange-100 text-orange-600' : 'bg-indigo-100 text-indigo-600'}`}>
+          {!showCountdown && isTripDay ? <Sparkles size={20} className="animate-pulse" /> : <Calendar size={20} />}
         </div>
         
         <div className="flex-1 min-w-0">
-          {isTripDay ? (
+          {!showCountdown && isTripDay ? (
             <div>
               <div className="text-[10px] font-bold text-orange-500 uppercase tracking-wider">Today's Trip</div>
               <div className="text-sm font-bold text-gray-800 truncate">
@@ -57,9 +60,9 @@ export default function CountdownWidget({ pins }: CountdownWidgetProps) {
               <div className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider">Trip Countdown</div>
               <div className="text-sm font-bold text-gray-800">
                 旅行まであと <span className="text-indigo-600 text-lg">
-                  {hoursUntil > 0 && hoursUntil < 24 
+                  {hoursUntil >= 0 && hoursUntil < 24 
                     ? `${hoursUntil} 時間` 
-                    : `${daysUntil + 1} 日`
+                    : `${daysUntil} 日`
                   }
                 </span>
               </div>

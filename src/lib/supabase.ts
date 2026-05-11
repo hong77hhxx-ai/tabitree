@@ -43,3 +43,23 @@ export type Group = {
   name: string
   created_at: string
 }
+
+export type MemberLocation = {
+  id: string
+  group_id: string
+  user_id: string
+  nickname: string
+  lat: number
+  lng: number
+  updated_at: string
+}
+
+export const getUserId = (): string => {
+  if (typeof window === 'undefined') return ''
+  let id = localStorage.getItem('tabitree_user_id')
+  if (!id) {
+    id = crypto.randomUUID()
+    localStorage.setItem('tabitree_user_id', id)
+  }
+  return id
+}

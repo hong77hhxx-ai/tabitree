@@ -5,15 +5,16 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { format, parseISO, differenceInDays, differenceInHours } from 'date-fns'
 import { formatDistanceToNow } from 'date-fns'
 import { ja } from 'date-fns/locale'
-import { MapPin, Utensils, Bed, Camera, Droplets, ChevronUp, ChevronDown, ImageIcon, Heart, ThumbsUp, Smile, Clock } from 'lucide-react'
+import { MapPin, Utensils, Bed, Camera, Droplets, ChevronUp, ChevronDown, ImageIcon, Heart, ThumbsUp, Smile, Clock, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
 type TimelineProps = {
   pins: Pin[]
   onSelectPin: (pin: Pin) => void
+  onDeletePin: (pinId: string) => void
 }
 
-export default function Timeline({ pins, onSelectPin }: TimelineProps) {
+export default function Timeline({ pins, onSelectPin, onDeletePin }: TimelineProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [activeTab, setActiveTab] = useState<'recent' | 'history'>('recent')
   
@@ -88,7 +89,7 @@ export default function Timeline({ pins, onSelectPin }: TimelineProps) {
                   <div 
                     key={pin.id}
                     onClick={() => onSelectPin(pin)}
-                    className="flex items-start gap-3 p-2 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors"
+                    className="flex items-start gap-3 p-2 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors group"
                   >
                     <div className={`mt-0.5 p-1.5 rounded-full ${getCategoryColor(pin.category)} flex-shrink-0`}>
                       {getCategoryIcon(pin.category)}
@@ -110,6 +111,18 @@ export default function Timeline({ pins, onSelectPin }: TimelineProps) {
                         {formatDistanceToNow(new Date(pin.created_at), { addSuffix: true, locale: ja })}
                       </div>
                     </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm('このスポットを削除してもよろしいですか？')) {
+                          onDeletePin(pin.id);
+                        }
+                      }}
+                      className="p-1.5 text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                      title="削除"
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   </div>
                 ))}
 
@@ -117,7 +130,7 @@ export default function Timeline({ pins, onSelectPin }: TimelineProps) {
                   <div 
                     key={pin.id}
                     onClick={() => onSelectPin(pin)}
-                    className="flex flex-col gap-2 p-2 rounded-xl hover:bg-orange-50/50 cursor-pointer transition-colors border border-transparent hover:border-orange-100"
+                    className="flex flex-col gap-2 p-2 rounded-xl hover:bg-orange-50/50 cursor-pointer transition-colors border border-transparent hover:border-orange-100 group"
                   >
                     <div className="flex items-start gap-3">
                       <div className={`mt-0.5 p-1.5 rounded-full bg-orange-100 text-orange-600 flex-shrink-0`}>
@@ -140,6 +153,18 @@ export default function Timeline({ pins, onSelectPin }: TimelineProps) {
                           {formatDistanceToNow(new Date(pin.created_at), { addSuffix: true, locale: ja })}
                         </div>
                       </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (window.confirm('このスポットを削除してもよろしいですか？')) {
+                            onDeletePin(pin.id);
+                          }
+                        }}
+                        className="p-1.5 text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                        title="削除"
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     </div>
                     
                     {pin.photo_url && (

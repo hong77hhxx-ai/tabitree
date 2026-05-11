@@ -39,6 +39,17 @@ body {
   100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
 }
 
+.pin-popup .maplibregl-popup-content {
+  padding: 0;
+  background: transparent;
+  border-radius: 1rem;
+  box-shadow: none;
+}
+
+.pin-popup .maplibregl-popup-tip {
+  border-top-color: white;
+}
+
 .gps-marker {
   width: 14px;
   height: 14px;
