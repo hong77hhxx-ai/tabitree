@@ -11,7 +11,7 @@ export type Pin = {
   group_id: string
   lat: number
   lng: number
-  category: 'Eat' | 'Stay' | 'Sightseeing' | 'Onsen'
+  category: 'Eat' | 'Stay' | 'Sightseeing' | 'Onsen' | 'Here'
   title: string
   notes: string | null
   status: 'Planned' | 'Confirmed' | 'Visited'

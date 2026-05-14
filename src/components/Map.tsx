@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import Map, { Marker, Popup, MapLayerMouseEvent, MapRef } from 'react-map-gl/maplibre'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { Pin, MemberLocation } from '@/lib/supabase'
-import { MapPin, Utensils, Bed, Camera, Droplets, Crosshair, ChevronRight, X } from 'lucide-react'
+import { MapPin, Utensils, Bed, Camera, Droplets, Crosshair, ChevronRight, X, Users } from 'lucide-react'
 
 const mapStyle = {
   version: 8,
@@ -105,6 +105,7 @@ export default function MapComponent({
       case 'Stay': return <Bed size={size} className="text-emerald-600" />
       case 'Sightseeing': return <Camera size={size} className="text-sky-600" />
       case 'Onsen': return <Droplets size={size} className="text-amber-600" />
+      case 'Here': return <Users size={size} className="text-violet-600" />
       default: return <MapPin size={size} className="text-teal-600" />
     }
   }
@@ -115,6 +116,7 @@ export default function MapComponent({
       case 'Stay': return 'bg-[var(--color-stay)]'
       case 'Sightseeing': return 'bg-[var(--color-sightseeing)]'
       case 'Onsen': return 'bg-[var(--color-onsen)]'
+      case 'Here': return 'bg-violet-100'
       default: return 'bg-primary'
     }
   }
@@ -136,7 +138,13 @@ export default function MapComponent({
         dragRotate={false}
       >
         {/* スポットのピン */}
-        {pins.map(pin => (
+        {pins.filter(pin => {
+          // Hereピンは期限切れなら非表示
+          if (pin.category === 'Here' && pin.scheduled_at) {
+            return new Date(pin.scheduled_at) > new Date()
+          }
+          return true
+        }).map(pin => (
           <Marker
             key={pin.id}
             longitude={pin.lng}
@@ -147,7 +155,20 @@ export default function MapComponent({
               onOpenSheet(pin)
             }}
           >
-            {pin.status === 'Visited' && pin.photo_url ? (
+            {pin.category === 'Here' ? (
+              // 今ここにいるよピン：パルスアニメーション
+              <div className="flex flex-col items-center group cursor-pointer">
+                <div className="relative w-12 h-12 flex items-center justify-center">
+                  <div className="here-pulse-ring" />
+                  <div className="relative z-10 w-10 h-10 rounded-full bg-violet-500 border-2 border-white shadow-lg flex items-center justify-center">
+                    <Users size={20} className="text-white" />
+                  </div>
+                </div>
+                <div className="text-xs font-bold text-center mt-1 bg-violet-50 text-violet-700 px-2 py-0.5 rounded-full shadow-sm whitespace-nowrap border border-violet-200">
+                  {pin.title || '今ここにいるよ'}
+                </div>
+              </div>
+            ) : pin.status === 'Visited' && pin.photo_url ? (
               // 訪問済み写真ピン：フォトカード形式
               <div className="flex flex-col items-center group cursor-pointer drop-shadow-lg">
                 <div className="bg-white p-1 rounded-xl border-2 border-orange-300 shadow-md transform transition-transform group-hover:scale-105 group-hover:-translate-y-0.5">

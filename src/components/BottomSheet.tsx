@@ -2,7 +2,7 @@
 
 import { Pin, uploadPhoto } from '@/lib/supabase'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Save, MapPin, Utensils, Bed, Camera, Droplets, Sparkles, Loader2, ImagePlus, CheckCircle, Heart, ThumbsUp, Smile, Navigation, Calendar, Clock, Trash2 } from 'lucide-react'
+import { X, Save, MapPin, Utensils, Bed, Camera, Droplets, Sparkles, Loader2, ImagePlus, CheckCircle, Heart, ThumbsUp, Smile, Navigation, Calendar, Clock, Trash2, Users } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
 
@@ -15,10 +15,17 @@ type BottomSheetProps = {
 }
 
 const CATEGORIES = [
+  { id: 'Here', icon: <Users size={18} />, label: '今ここにいるよ', bgClass: 'bg-violet-100', textClass: 'text-violet-800', ringClass: 'ring-violet-300' },
   { id: 'Eat', icon: <Utensils size={18} />, label: '食べる', bgClass: 'bg-[var(--color-eat)]', textClass: 'text-rose-800', ringClass: 'ring-rose-300' },
   { id: 'Stay', icon: <Bed size={18} />, label: '泊まる', bgClass: 'bg-[var(--color-stay)]', textClass: 'text-emerald-800', ringClass: 'ring-emerald-300' },
   { id: 'Sightseeing', icon: <Camera size={18} />, label: '観光', bgClass: 'bg-[var(--color-sightseeing)]', textClass: 'text-sky-800', ringClass: 'ring-sky-300' },
   { id: 'Onsen', icon: <Droplets size={18} />, label: '温泉', bgClass: 'bg-[var(--color-onsen)]', textClass: 'text-amber-800', ringClass: 'ring-amber-300' },
+]
+
+const HERE_DURATIONS = [
+  { label: '1時間', hours: 1 },
+  { label: '3時間', hours: 3 },
+  { label: '今日中', hours: null },
 ]
 
 const STATUSES = ['Planned', 'Confirmed', 'Visited']
@@ -288,16 +295,49 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete }: 
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-600 mb-1">タイトル</label>
+                <label className="block text-sm font-semibold text-gray-600 mb-1">
+                  {formData.category === 'Here' ? '場所の名前（任意）' : 'タイトル'}
+                </label>
                 <input
                   type="text"
                   value={formData.title || ''}
                   onChange={e => handleChange('title', e.target.value)}
-                  placeholder="お店や場所の名前"
+                  placeholder={formData.category === 'Here' ? '例: 図書館2F, 学食前' : 'お店や場所の名前'}
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:bg-white transition-all text-gray-800"
                 />
               </div>
 
+              {/* Hereカテゴリ：滞在時間セレクター */}
+              {formData.category === 'Here' && (
+                <div className="bg-violet-50 border border-violet-100 rounded-2xl p-4 space-y-3">
+                  <label className="block text-sm font-bold text-violet-700">⏱ どのくらいいる？</label>
+                  <div className="flex gap-2">
+                    {HERE_DURATIONS.map(({ label, hours }) => {
+                      const expires = hours
+                        ? new Date(Date.now() + hours * 3600000).toISOString()
+                        : new Date(new Date().setHours(23, 59, 59, 0)).toISOString()
+                      const isSelected = formData.scheduled_at === expires
+                      return (
+                        <button
+                          key={label}
+                          type="button"
+                          onClick={() => handleChange('scheduled_at', expires)}
+                          className={`flex-1 py-2.5 text-sm font-bold rounded-xl border transition-all ${
+                            isSelected
+                              ? 'bg-violet-600 text-white border-violet-600'
+                              : 'bg-white text-violet-600 border-violet-200'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  <p className="text-xs text-violet-400">時間が経つと自動的に消えます</p>
+                </div>
+              )}
+
+              {formData.category !== 'Here' && (
               <div>
                 <label className="block text-sm font-semibold text-gray-600 mb-1">ステータス</label>
                 <div className="flex bg-gray-100 p-1 rounded-xl">
@@ -316,6 +356,7 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete }: 
                   ))}
                 </div>
               </div>
+              )}
 
               {/* チェックインボタン */}
               {formData.status === 'Confirmed' && pin?.id && (
