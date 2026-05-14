@@ -43,6 +43,8 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete }: 
     { icon: <Heart size={16} />, label: '❤️', id: 'heart' },
     { icon: <ThumbsUp size={16} />, label: '👍', id: 'like' },
     { icon: <Smile size={16} />, label: '😋', id: 'yummy' },
+    { icon: null, label: '🚶', id: 'going' },
+    { icon: null, label: '⏰', id: 'late' },
   ]
 
   useEffect(() => {
@@ -376,17 +378,20 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete }: 
                 <div className="bg-orange-50/50 border border-orange-100 p-4 rounded-xl space-y-4 mt-2">
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-bold text-gray-700">📸 思い出の写真</span>
-                    <label className={`flex items-center gap-1 text-xs font-bold bg-white text-orange-600 px-3 py-1.5 rounded-full border border-orange-200 shadow-sm active:bg-orange-50 transition-all ${isUploading || !pin?.id ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}`}>
-                      {isUploading ? <Loader2 size={14} className="animate-spin" /> : <ImagePlus size={14} />}
-                      {formData.photo_url ? '写真を変更' : '写真を追加'}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handlePhotoUpload}
-                        disabled={isUploading || !pin?.id}
-                      />
-                    </label>
+                    <div className={`flex gap-2 ${isUploading || !pin?.id ? 'opacity-50 pointer-events-none' : ''}`}>
+                      {/* カメラで撮影 */}
+                      <label className="flex items-center gap-1 text-xs font-bold bg-white text-orange-600 px-3 py-1.5 rounded-full border border-orange-200 shadow-sm active:bg-orange-50 cursor-pointer">
+                        {isUploading ? <Loader2 size={14} className="animate-spin" /> : <span>📷</span>}
+                        撮影
+                        <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhotoUpload} disabled={isUploading || !pin?.id} />
+                      </label>
+                      {/* ライブラリから選択 */}
+                      <label className="flex items-center gap-1 text-xs font-bold bg-white text-orange-600 px-3 py-1.5 rounded-full border border-orange-200 shadow-sm active:bg-orange-50 cursor-pointer">
+                        <ImagePlus size={14} />
+                        選択
+                        <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={isUploading || !pin?.id} />
+                      </label>
+                    </div>
                   </div>
                   
                   {formData.photo_url && (
@@ -401,19 +406,25 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete }: 
                     </div>
                   )}
 
-                  <div className="pt-2 border-t border-orange-100">
-                    <label className="block text-sm font-bold text-gray-700 mb-2">みんなのスタンプ</label>
-                    <div className="flex gap-2">
+                  <div className="pt-2 border-t border-orange-100 space-y-2">
+                    <label className="block text-sm font-bold text-gray-700">みんなのスタンプ</label>
+                    <div className="flex flex-wrap gap-2">
                       {EMOJIS.map(emoji => {
                         const count = formData.reactions?.[emoji.id] || 0
+                        const quickLabel = emoji.id === 'going' ? '向かってます' : emoji.id === 'late' ? '遅れます' : null
                         return (
                           <button
                             key={emoji.id}
                             onClick={() => handleReaction(emoji.id)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-full hover:bg-gray-50 hover:border-gray-300 transition-all active:scale-95 shadow-sm"
+                            className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-full transition-all active:scale-95 shadow-sm text-sm ${
+                              quickLabel
+                                ? 'bg-indigo-50 border-indigo-200 text-indigo-700 font-bold hover:bg-indigo-100'
+                                : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300'
+                            }`}
                           >
                             <span className="text-base">{emoji.label}</span>
-                            {count > 0 && <span className="text-xs font-bold text-gray-600">{count}</span>}
+                            {quickLabel && <span>{quickLabel}</span>}
+                            {count > 0 && <span className="text-xs font-bold text-gray-600 ml-0.5">{count}</span>}
                           </button>
                         )
                       })}
