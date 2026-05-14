@@ -10,6 +10,7 @@ export default function Home() {
   const router = useRouter()
   const [isCreating, setIsCreating] = useState(false)
   const [groupName, setGroupName] = useState('')
+  const [errorMsg, setErrorMsg] = useState('')
 
   const handleCreateGroup = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -24,6 +25,7 @@ export default function Home() {
 
     if (error) {
       console.error(error)
+      setErrorMsg(`エラー: ${error.message} (code: ${error.code})`)
       setIsCreating(false)
       return
     }
@@ -87,6 +89,9 @@ export default function Home() {
                 maxLength={50}
               />
             </div>
+            {errorMsg && (
+              <p className="text-xs text-red-500 bg-red-50 rounded-xl px-3 py-2">{errorMsg}</p>
+            )}
             <button
               type="submit"
               disabled={isCreating || !groupName.trim()}
