@@ -14,9 +14,9 @@ type CountdownWidgetProps = {
 export default function CountdownWidget({ pins, onPinSelect }: CountdownWidgetProps) {
   const now = new Date()
 
-  // 未来の予定のみ取得してソート
+  // 未来の予定のみ取得（Hereカテゴリは除外）
   const scheduledPins = pins
-    .filter(p => p.scheduled_at && isAfter(parseISO(p.scheduled_at), now))
+    .filter(p => p.category !== 'Here' && p.scheduled_at && isAfter(parseISO(p.scheduled_at), now))
     .sort((a, b) => new Date(a.scheduled_at!).getTime() - new Date(b.scheduled_at!).getTime())
 
   if (scheduledPins.length === 0) return null

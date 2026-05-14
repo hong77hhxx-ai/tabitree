@@ -9,6 +9,7 @@ import Timeline from '@/components/Timeline'
 import CountdownWidget from '@/components/CountdownWidget'
 import NicknameModal from '@/components/NicknameModal'
 import BottomNav from '@/components/BottomNav'
+import HereWidget from '@/components/HereWidget'
 
 const MapComponent = dynamic(() => import('@/components/Map'), { ssr: false })
 
@@ -235,16 +236,19 @@ export default function MapPage() {
       {/* マップ画面 */}
       <div className={`flex-1 flex flex-col min-h-0 ${activeTab === 'map' ? 'flex' : 'hidden'}`}>
         <CountdownWidget pins={pins} onPinSelect={handleShowPopup} />
-        <MapComponent
-          pins={pins}
-          onAddPin={handleAddPin}
-          onOpenSheet={handleOpenSheet}
-          popupPin={popupPin}
-          onClosePopup={() => setPopupPin(null)}
-          centerLocation={centerLocation}
-          userLocation={userLocation}
-          memberLocations={memberLocations}
-        />
+        <div className="relative flex-1 min-h-0">
+          <MapComponent
+            pins={pins}
+            onAddPin={handleAddPin}
+            onOpenSheet={handleOpenSheet}
+            popupPin={popupPin}
+            onClosePopup={() => setPopupPin(null)}
+            centerLocation={centerLocation}
+            userLocation={userLocation}
+            memberLocations={memberLocations}
+          />
+          <HereWidget pins={pins} onSelectPin={handleShowPopup} />
+        </div>
       </div>
 
       {/* タイムライン画面 */}
