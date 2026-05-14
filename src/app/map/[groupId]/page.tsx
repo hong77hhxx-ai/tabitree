@@ -29,17 +29,22 @@ export default function MapPage() {
   const [activeTab, setActiveTab] = useState<'map' | 'timeline'>('map')
 
   const [nickname, setNickname] = useState<string | null>(null)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [showNicknameModal, setShowNicknameModal] = useState(false)
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null)
   const [memberLocations, setMemberLocations] = useState<MemberLocation[]>([])
 
   const userLocationRef = useRef<{lat: number, lng: number} | null>(null)
 
-  // ニックネーム確認
+  // ニックネーム・アバター確認
   useEffect(() => {
     const saved = localStorage.getItem('tabitree_nickname')
-    if (saved) setNickname(saved)
-    else setShowNicknameModal(true)
+    if (saved) {
+      setNickname(saved)
+      setAvatarUrl(localStorage.getItem('tabitree_avatar_url'))
+    } else {
+      setShowNicknameModal(true)
+    }
   }, [])
 
   // GPS監視
@@ -69,6 +74,7 @@ export default function MapPage() {
         group_id: groupId,
         user_id: userId,
         nickname,
+        avatar_url: avatarUrl,
         lat: loc.lat,
         lng: loc.lng,
         updated_at: new Date().toISOString(),
@@ -105,7 +111,7 @@ export default function MapPage() {
       window.removeEventListener('pagehide', deleteLocation)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [nickname, groupId])
+  }, [nickname, avatarUrl, groupId])
 
   // メンバー位置のリアルタイム購読
   useEffect(() => {
@@ -227,8 +233,9 @@ export default function MapPage() {
   return (
     <div className="relative w-full h-screen overflow-hidden bg-gray-100 flex flex-col">
       {showNicknameModal && (
-        <NicknameModal onConfirm={(name) => {
+        <NicknameModal onConfirm={(name, avatar) => {
           setNickname(name)
+          setAvatarUrl(avatar)
           setShowNicknameModal(false)
         }} />
       )}

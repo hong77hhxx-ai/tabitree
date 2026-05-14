@@ -50,9 +50,23 @@ export type MemberLocation = {
   group_id: string
   user_id: string
   nickname: string
+  avatar_url: string | null
   lat: number
   lng: number
   updated_at: string
+}
+
+export const uploadAvatar = async (file: File, userId: string): Promise<string | null> => {
+  const fileExt = file.name.split('.').pop()
+  const filePath = `avatars/${userId}.${fileExt}`
+
+  await supabase.storage.from('pin-photos').remove([filePath])
+
+  const { error } = await supabase.storage.from('pin-photos').upload(filePath, file)
+  if (error) { console.error('Avatar upload error:', error); return null }
+
+  const { data } = supabase.storage.from('pin-photos').getPublicUrl(filePath)
+  return data.publicUrl
 }
 
 export const getUserId = (): string => {

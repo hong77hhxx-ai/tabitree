@@ -274,8 +274,12 @@ export default function MapComponent({
               anchor="bottom"
             >
               <div className="flex flex-col items-center" style={{ opacity }}>
-                <div className={`w-9 h-9 rounded-full ${getMemberColor(member.user_id)} flex items-center justify-center text-white text-sm font-bold shadow-md border-2 border-white`}>
-                  {member.nickname.charAt(0).toUpperCase()}
+                <div className={`w-10 h-10 rounded-full ${getMemberColor(member.user_id)} flex items-center justify-center text-white text-sm font-bold shadow-md border-2 border-white overflow-hidden`}>
+                  {member.avatar_url ? (
+                    <img src={member.avatar_url} alt={member.nickname} className="w-full h-full object-cover" />
+                  ) : (
+                    member.nickname.charAt(0).toUpperCase()
+                  )}
                 </div>
                 <div className="text-[10px] font-bold bg-white/90 px-1.5 py-0.5 rounded-full shadow-sm mt-0.5 whitespace-nowrap text-gray-700 border border-gray-100 flex flex-col items-center">
                   <span>{member.nickname}</span>
