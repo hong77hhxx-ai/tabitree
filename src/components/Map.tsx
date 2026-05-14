@@ -137,21 +137,36 @@ export default function MapComponent({
               onOpenSheet(pin)
             }}
           >
-            <div className="flex flex-col items-center group cursor-pointer">
-              <div className={`p-2 rounded-full shadow-md transform transition-transform group-hover:scale-110 flex items-center justify-center border-2
-                ${pin.status === 'Visited' ? 'border-orange-300 bg-orange-50 scale-105' : `border-white ${getCategoryColor(pin.category)}`}`}>
-                {pin.status === 'Visited' && pin.photo_url ? (
-                  <div className="w-5 h-5 rounded-full overflow-hidden">
-                    <img src={pin.photo_url} alt="memory" className="w-full h-full object-cover" />
+            {pin.status === 'Visited' && pin.photo_url ? (
+              // 訪問済み写真ピン：フォトカード形式
+              <div className="flex flex-col items-center group cursor-pointer drop-shadow-lg">
+                <div className="bg-white p-1 rounded-xl border-2 border-orange-300 shadow-md transform transition-transform group-hover:scale-105 group-hover:-translate-y-0.5">
+                  <div className="w-16 h-16 rounded-lg overflow-hidden">
+                    <img src={pin.photo_url} alt={pin.title} className="w-full h-full object-cover" />
                   </div>
-                ) : getCategoryIcon(pin.category)}
-              </div>
-              {pin.title && (
-                <div className="text-xs font-bold text-center mt-1 bg-white/90 px-2 py-0.5 rounded-full backdrop-blur-sm shadow-sm whitespace-nowrap text-gray-800 border border-gray-100">
-                  {pin.title}
+                  {pin.title && (
+                    <div className="text-[10px] font-bold text-center mt-1 text-gray-700 truncate max-w-[72px]">
+                      {pin.title}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+                {/* 下向きの三角 */}
+                <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[8px] border-l-transparent border-r-transparent border-t-orange-300" />
+              </div>
+            ) : (
+              // 通常ピン
+              <div className="flex flex-col items-center group cursor-pointer">
+                <div className={`p-2 rounded-full shadow-md transform transition-transform group-hover:scale-110 flex items-center justify-center border-2
+                  ${pin.status === 'Visited' ? 'border-orange-300 bg-orange-50 scale-105' : `border-white ${getCategoryColor(pin.category)}`}`}>
+                  {getCategoryIcon(pin.category)}
+                </div>
+                {pin.title && (
+                  <div className="text-xs font-bold text-center mt-1 bg-white/90 px-2 py-0.5 rounded-full backdrop-blur-sm shadow-sm whitespace-nowrap text-gray-800 border border-gray-100">
+                    {pin.title}
+                  </div>
+                )}
+              </div>
+            )}
           </Marker>
         ))}
 

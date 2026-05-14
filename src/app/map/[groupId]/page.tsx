@@ -12,7 +12,7 @@ import NicknameModal from '@/components/NicknameModal'
 const MapComponent = dynamic(() => import('@/components/Map'), { ssr: false })
 
 const LOCATION_TTL_MS = 5 * 60 * 1000 // 5分以上更新がなければ非表示
-const SHARE_INTERVAL_MS = 10_000
+const SHARE_INTERVAL_MS = 15_000
 
 export default function MapPage() {
   const params = useParams()
@@ -49,7 +49,7 @@ export default function MapPage() {
         userLocationRef.current = loc
       },
       (err) => console.error('GPS Error:', err),
-      { enableHighAccuracy: true }
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 30000 }
     )
     return () => navigator.geolocation.clearWatch(watchId)
   }, [])
@@ -205,7 +205,7 @@ export default function MapPage() {
         }} />
       )}
 
-      <CountdownWidget pins={pins} />
+      <CountdownWidget pins={pins} onPinSelect={handleShowPopup} />
       <Timeline pins={pins} onSelectPin={handleShowPopup} onDeletePin={handleDeletePin} />
 
       <MapComponent

@@ -8,20 +8,22 @@ import { ja } from 'date-fns/locale'
 
 type CountdownWidgetProps = {
   pins: Pin[]
+  onPinSelect?: (pin: Pin) => void
 }
 
-export default function CountdownWidget({ pins }: CountdownWidgetProps) {
-  // 予定があるピンを取得してソート
+export default function CountdownWidget({ pins, onPinSelect }: CountdownWidgetProps) {
+  const now = new Date()
+
+  // 未来の予定のみ取得してソート
   const scheduledPins = pins
-    .filter(p => p.scheduled_at)
+    .filter(p => p.scheduled_at && isAfter(parseISO(p.scheduled_at), now))
     .sort((a, b) => new Date(a.scheduled_at!).getTime() - new Date(b.scheduled_at!).getTime())
 
   if (scheduledPins.length === 0) return null
 
   const firstPin = scheduledPins[0]
   const tripDate = parseISO(firstPin.scheduled_at!)
-  const now = new Date()
-  
+
   const daysUntil = differenceInDays(tripDate, now)
   const hoursUntil = differenceInHours(tripDate, now)
   const isTripDay = isSameDay(tripDate, now) || (isAfter(now, tripDate) && isSameDay(now, parseISO(scheduledPins[scheduledPins.length - 1].scheduled_at!)))
@@ -58,10 +60,12 @@ export default function CountdownWidget({ pins }: CountdownWidgetProps) {
           ) : (
             <div>
               <div className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider">Trip Countdown</div>
-              <div className="text-sm font-bold text-gray-800">
-                旅行まであと <span className="text-indigo-600 text-lg">
-                  {hoursUntil >= 0 && hoursUntil < 24 
-                    ? `${hoursUntil} 時間` 
+              <div className="text-sm font-bold text-gray-800 truncate">
+                <span className="text-indigo-700">{firstPin.title}</span>
+                {'まであと '}
+                <span className="text-indigo-600 text-lg">
+                  {hoursUntil >= 0 && hoursUntil < 24
+                    ? `${hoursUntil} 時間`
                     : `${daysUntil} 日`
                   }
                 </span>
@@ -70,10 +74,13 @@ export default function CountdownWidget({ pins }: CountdownWidgetProps) {
           )}
         </div>
 
-        {isTripDay && nextPin && (
-          <div className="bg-orange-500 text-white text-[10px] font-bold px-2 py-1 rounded-lg animate-bounce">
-            CHECK!
-          </div>
+        {nextPin && (
+          <button
+            onClick={() => onPinSelect?.(nextPin)}
+            className="bg-indigo-500 hover:bg-indigo-600 active:scale-95 text-white text-[10px] font-bold px-3 py-2 rounded-xl transition-all flex-shrink-0 shadow-sm"
+          >
+            CHECK
+          </button>
         )}
       </motion.div>
     </div>
