@@ -48,6 +48,16 @@ const getMemberColor = (userId: string) => {
   return MEMBER_COLORS[Math.abs(hash) % MEMBER_COLORS.length]
 }
 
+// 更新時刻から透明度と「鮮度ラベル」を計算
+const getLocationFreshness = (updatedAt: string) => {
+  const age = Date.now() - new Date(updatedAt).getTime()
+  const mins = age / 60000
+  if (mins < 1)  return { opacity: 1,   label: 'たった今' }
+  if (mins < 3)  return { opacity: 0.75, label: `${Math.floor(mins)}分前` }
+  if (mins < 5)  return { opacity: 0.4,  label: `${Math.floor(mins)}分前` }
+  return           { opacity: 0.2,  label: `${Math.floor(mins)}分前` }
+}
+
 export default function MapComponent({
   pins, onAddPin, onOpenSheet, popupPin, onClosePopup,
   centerLocation, userLocation, memberLocations = [],
@@ -232,23 +242,27 @@ export default function MapComponent({
         )}
 
         {/* 他のメンバーの位置 */}
-        {memberLocations.map(member => (
-          <Marker
-            key={member.user_id}
-            longitude={member.lng}
-            latitude={member.lat}
-            anchor="bottom"
-          >
-            <div className="flex flex-col items-center">
-              <div className={`w-8 h-8 rounded-full ${getMemberColor(member.user_id)} flex items-center justify-center text-white text-xs font-bold shadow-md border-2 border-white`}>
-                {member.nickname.charAt(0).toUpperCase()}
+        {memberLocations.map(member => {
+          const { opacity, label } = getLocationFreshness(member.updated_at)
+          return (
+            <Marker
+              key={member.user_id}
+              longitude={member.lng}
+              latitude={member.lat}
+              anchor="bottom"
+            >
+              <div className="flex flex-col items-center" style={{ opacity }}>
+                <div className={`w-9 h-9 rounded-full ${getMemberColor(member.user_id)} flex items-center justify-center text-white text-sm font-bold shadow-md border-2 border-white`}>
+                  {member.nickname.charAt(0).toUpperCase()}
+                </div>
+                <div className="text-[10px] font-bold bg-white/90 px-1.5 py-0.5 rounded-full shadow-sm mt-0.5 whitespace-nowrap text-gray-700 border border-gray-100 flex flex-col items-center">
+                  <span>{member.nickname}</span>
+                  <span className="text-gray-400 font-normal">{label}</span>
+                </div>
               </div>
-              <div className="text-[10px] font-bold bg-white/90 px-1.5 py-0.5 rounded-full shadow-sm mt-0.5 whitespace-nowrap text-gray-700 border border-gray-100">
-                {member.nickname}
-              </div>
-            </div>
-          </Marker>
-        ))}
+            </Marker>
+          )
+        })}
       </Map>
 
       <button
