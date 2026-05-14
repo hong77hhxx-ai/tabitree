@@ -17,11 +17,11 @@ export default function Timeline({ pins, onSelectPin, onDeletePin }: TimelinePro
   const [activeTab, setActiveTab] = useState<'recent' | 'history'>('recent')
 
   const recentPins = [...pins]
-    .filter(p => p.status !== 'Visited')
+    .filter(p => p.status !== 'Visited' && p.category !== 'Here')
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
   const visitedPins = [...pins]
-    .filter(p => p.status === 'Visited')
+    .filter(p => p.status === 'Visited' && p.category !== 'Here')
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
   const getCategoryIcon = (category: string, size = 16) => {
