@@ -123,6 +123,7 @@ export default function MapPage() {
     }
     fetchLocations()
 
+    // Realtimeイベント購読
     const channel = supabase
       .channel('member_locations')
       .on('postgres_changes', {
@@ -131,7 +132,13 @@ export default function MapPage() {
       }, fetchLocations)
       .subscribe()
 
-    return () => { supabase.removeChannel(channel) }
+    // Realtimeが届かない場合のフォールバック（15秒ポーリング）
+    const poll = setInterval(fetchLocations, 15000)
+
+    return () => {
+      supabase.removeChannel(channel)
+      clearInterval(poll)
+    }
   }, [groupId])
 
   // ピンの購読
