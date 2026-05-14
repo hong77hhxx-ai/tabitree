@@ -71,13 +71,13 @@ input, textarea, [contenteditable] {
 }
 
 .gps-marker {
-  width: 16px;
-  height: 16px;
+  width: 22px;
+  height: 22px;
   background-color: #2563eb;
-  border: 2.5px solid white;
+  border: 3px solid white;
   border-radius: 50%;
   animation: pulse 2s infinite;
-  box-shadow: 0 0 6px rgba(0,0,0,0.3);
+  box-shadow: 0 0 8px rgba(0,0,0,0.35);
 }
 
 /* MapLibre Popup カスタム */
