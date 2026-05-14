@@ -32,6 +32,7 @@ const STATUSES = ['Planned', 'Confirmed', 'Visited']
 
 export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete }: BottomSheetProps) {
   const [formData, setFormData] = useState<Partial<Pin>>({})
+  const [selectedDuration, setSelectedDuration] = useState<string | null>(null)
   const [suggestions, setSuggestions] = useState<any[]>([])
   const [isSuggesting, setIsSuggesting] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
@@ -57,6 +58,7 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete }: 
         scheduled_at: pin.scheduled_at || null,
       })
       setSuggestions([])
+      setSelectedDuration(null)
     }
   }, [pin])
 
@@ -312,26 +314,26 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete }: 
                 <div className="bg-violet-50 border border-violet-100 rounded-2xl p-4 space-y-3">
                   <label className="block text-sm font-bold text-violet-700">⏱ どのくらいいる？</label>
                   <div className="flex gap-2">
-                    {HERE_DURATIONS.map(({ label, hours }) => {
-                      const expires = hours
-                        ? new Date(Date.now() + hours * 3600000).toISOString()
-                        : new Date(new Date().setHours(23, 59, 59, 0)).toISOString()
-                      const isSelected = formData.scheduled_at === expires
-                      return (
-                        <button
-                          key={label}
-                          type="button"
-                          onClick={() => handleChange('scheduled_at', expires)}
-                          className={`flex-1 py-2.5 text-sm font-bold rounded-xl border transition-all ${
-                            isSelected
-                              ? 'bg-violet-600 text-white border-violet-600'
-                              : 'bg-white text-violet-600 border-violet-200'
-                          }`}
-                        >
-                          {label}
-                        </button>
-                      )
-                    })}
+                    {HERE_DURATIONS.map(({ label, hours }) => (
+                    <button
+                      key={label}
+                      type="button"
+                      onClick={() => {
+                        const expires = hours
+                          ? new Date(Date.now() + hours * 3600000).toISOString()
+                          : new Date(new Date().setHours(23, 59, 59, 0)).toISOString()
+                        setSelectedDuration(label)
+                        handleChange('scheduled_at', expires)
+                      }}
+                      className={`flex-1 py-2.5 text-sm font-bold rounded-xl border transition-all ${
+                        selectedDuration === label
+                          ? 'bg-violet-600 text-white border-violet-600'
+                          : 'bg-white text-violet-600 border-violet-200'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
                   </div>
                   <p className="text-xs text-violet-400">時間が経つと自動的に消えます</p>
                 </div>
