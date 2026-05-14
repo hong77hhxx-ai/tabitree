@@ -43,8 +43,12 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete }: 
     { icon: <Heart size={16} />, label: '❤️', id: 'heart' },
     { icon: <ThumbsUp size={16} />, label: '👍', id: 'like' },
     { icon: <Smile size={16} />, label: '😋', id: 'yummy' },
-    { icon: null, label: '🚶', id: 'going' },
-    { icon: null, label: '⏰', id: 'late' },
+  ]
+
+  const HERE_REACTIONS = [
+    { label: '🚶', text: '向かってます', id: 'going' },
+    { label: '⏰', text: '遅れます', id: 'late' },
+    { label: '👋', text: 'いるよ！', id: 'here' },
   ]
 
   useEffect(() => {
@@ -338,6 +342,33 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete }: 
                   ))}
                   </div>
                   <p className="text-xs text-violet-400">時間が経つと自動的に消えます</p>
+
+                  {/* Hereクイックリアクション（既存ピンのみ） */}
+                  {pin?.id && (
+                    <div className="pt-2 border-t border-violet-100">
+                      <label className="block text-xs font-bold text-violet-600 mb-2">クイックリアクション</label>
+                      <div className="flex flex-wrap gap-2">
+                        {HERE_REACTIONS.map(r => {
+                          const count = formData.reactions?.[r.id] || 0
+                          return (
+                            <button
+                              key={r.id}
+                              onClick={() => handleReaction(r.id)}
+                              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border transition-all active:scale-95 text-sm font-bold ${
+                                count > 0
+                                  ? 'bg-violet-100 border-violet-300 text-violet-700'
+                                  : 'bg-white border-violet-200 text-violet-600'
+                              }`}
+                            >
+                              <span>{r.label}</span>
+                              <span>{r.text}</span>
+                              {count > 0 && <span className="text-xs bg-violet-500 text-white px-1.5 py-0.5 rounded-full">{count}</span>}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -406,25 +437,19 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete }: 
                     </div>
                   )}
 
-                  <div className="pt-2 border-t border-orange-100 space-y-2">
-                    <label className="block text-sm font-bold text-gray-700">みんなのスタンプ</label>
-                    <div className="flex flex-wrap gap-2">
+                  <div className="pt-2 border-t border-orange-100">
+                    <label className="block text-sm font-bold text-gray-700 mb-2">みんなのスタンプ</label>
+                    <div className="flex gap-2">
                       {EMOJIS.map(emoji => {
                         const count = formData.reactions?.[emoji.id] || 0
-                        const quickLabel = emoji.id === 'going' ? '向かってます' : emoji.id === 'late' ? '遅れます' : null
                         return (
                           <button
                             key={emoji.id}
                             onClick={() => handleReaction(emoji.id)}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-full transition-all active:scale-95 shadow-sm text-sm ${
-                              quickLabel
-                                ? 'bg-indigo-50 border-indigo-200 text-indigo-700 font-bold hover:bg-indigo-100'
-                                : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300'
-                            }`}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-full hover:bg-gray-50 hover:border-gray-300 transition-all active:scale-95 shadow-sm"
                           >
                             <span className="text-base">{emoji.label}</span>
-                            {quickLabel && <span>{quickLabel}</span>}
-                            {count > 0 && <span className="text-xs font-bold text-gray-600 ml-0.5">{count}</span>}
+                            {count > 0 && <span className="text-xs font-bold text-gray-600">{count}</span>}
                           </button>
                         )
                       })}
