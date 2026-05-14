@@ -3,7 +3,7 @@
 import { Pin, uploadPhoto } from '@/lib/supabase'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Save, MapPin, Utensils, Bed, Camera, Droplets, Sparkles, Loader2, ImagePlus, CheckCircle, Heart, ThumbsUp, Smile, Navigation, Calendar, Clock, Trash2 } from 'lucide-react'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
 
 type BottomSheetProps = {
@@ -28,7 +28,7 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete }: 
   const [suggestions, setSuggestions] = useState<any[]>([])
   const [isSuggesting, setIsSuggesting] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+
 
   // 絵文字の定義
   const EMOJIS = [
@@ -332,23 +332,18 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete }: 
               {formData.status === 'Visited' && (
                 <div className="bg-orange-50/50 border border-orange-100 p-4 rounded-xl space-y-4 mt-2">
                   <div className="flex justify-between items-center">
-                    <label className="block text-sm font-bold text-gray-700">📸 思い出の写真</label>
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      ref={fileInputRef} 
-                      className="hidden" 
-                      onChange={handlePhotoUpload}
-                      disabled={isUploading || !pin?.id}
-                    />
-                    <button 
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={isUploading || !pin?.id}
-                      className="flex items-center gap-1 text-xs font-bold bg-white text-orange-600 px-3 py-1.5 rounded-full border border-orange-200 shadow-sm hover:bg-orange-50 disabled:opacity-50 transition-all"
-                    >
+                    <span className="text-sm font-bold text-gray-700">📸 思い出の写真</span>
+                    <label className={`flex items-center gap-1 text-xs font-bold bg-white text-orange-600 px-3 py-1.5 rounded-full border border-orange-200 shadow-sm active:bg-orange-50 transition-all ${isUploading || !pin?.id ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}`}>
                       {isUploading ? <Loader2 size={14} className="animate-spin" /> : <ImagePlus size={14} />}
                       {formData.photo_url ? '写真を変更' : '写真を追加'}
-                    </button>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handlePhotoUpload}
+                        disabled={isUploading || !pin?.id}
+                      />
+                    </label>
                   </div>
                   
                   {formData.photo_url && (
