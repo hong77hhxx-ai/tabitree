@@ -226,13 +226,15 @@ export default function MapComponent({
                   <span className="text-[10px] text-gray-400 font-medium">
                     {CATEGORY_LABEL[popupPin.category] ?? popupPin.category}
                   </span>
-                  <span className={`ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                    popupPin.status === 'Visited' ? 'bg-orange-100 text-orange-600' :
-                    popupPin.status === 'Confirmed' ? 'bg-emerald-100 text-emerald-600' :
-                    'bg-indigo-50 text-indigo-500'
-                  }`}>
-                    {STATUS_LABEL[popupPin.status] ?? popupPin.status}
-                  </span>
+                  {popupPin.category !== 'Here' && (
+                    <span className={`ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                      popupPin.status === 'Visited' ? 'bg-orange-100 text-orange-600' :
+                      popupPin.status === 'Confirmed' ? 'bg-emerald-100 text-emerald-600' :
+                      'bg-indigo-50 text-indigo-500'
+                    }`}>
+                      {STATUS_LABEL[popupPin.status] ?? popupPin.status}
+                    </span>
+                  )}
                 </div>
                 <div className="font-bold text-gray-800 text-sm truncate mb-2">{popupPin.title}</div>
                 {popupPin.notes && (
