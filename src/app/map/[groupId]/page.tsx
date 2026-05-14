@@ -63,7 +63,7 @@ export default function MapPage() {
 
     const share = async () => {
       const loc = userLocationRef.current
-      if (!loc) return
+      if (!loc) return  // GPS未取得時はupsertしない
       await supabase.from('member_locations').upsert({
         group_id: groupId,
         user_id: userId,
@@ -74,18 +74,35 @@ export default function MapPage() {
       }, { onConflict: 'group_id,user_id' })
     }
 
+    const deleteLocation = () => {
+      // sendBeacon でバックグラウンド/タブ閉じ時も確実に送信
+      const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/member_locations?group_id=eq.${groupId}&user_id=eq.${userId}`
+      navigator.sendBeacon?.(url)  // フォールバック用（Supabase側のCronが主）
+    }
+
     share()
     const interval = setInterval(share, SHARE_INTERVAL_MS)
 
-    const cleanup = async () => {
-      clearInterval(interval)
-      await supabase.from('member_locations').delete()
-        .eq('group_id', groupId).eq('user_id', userId)
+    // iOS Safariも含め最も確実なイベント群を登録
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        // バックグラウンド移行時にupdated_atを止める（Cron側が5分後に削除）
+        clearInterval(interval)
+      } else {
+        // 復帰時に再開
+        share()
+      }
     }
-    window.addEventListener('beforeunload', cleanup)
+
+    window.addEventListener('beforeunload', deleteLocation)
+    window.addEventListener('pagehide', deleteLocation)  // iOS Safari対応
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
     return () => {
-      cleanup()
-      window.removeEventListener('beforeunload', cleanup)
+      clearInterval(interval)
+      window.removeEventListener('beforeunload', deleteLocation)
+      window.removeEventListener('pagehide', deleteLocation)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [nickname, groupId])
 
