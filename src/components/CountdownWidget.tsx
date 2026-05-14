@@ -35,39 +35,37 @@ export default function CountdownWidget({ pins, onPinSelect }: CountdownWidgetPr
   const nextPin = scheduledPins.find(p => isAfter(parseISO(p.scheduled_at!), now))
 
   return (
-    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 w-[calc(100%-2rem)] max-w-sm">
-      <motion.div 
+    <div
+      className="absolute left-1/2 -translate-x-1/2 z-20 w-[calc(100%-2rem)] max-w-sm"
+      style={{ top: 'max(env(safe-area-inset-top, 0px) + 12px, 16px)' }}
+    >
+      <motion.div
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="bg-white/90 backdrop-blur-md rounded-2xl shadow-lg border border-white/50 p-3 flex items-center gap-3"
+        className="bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-white/60 px-4 py-3 flex items-center gap-3"
       >
-        <div className={`p-2 rounded-xl flex-shrink-0 ${!showCountdown && isTripDay ? 'bg-orange-100 text-orange-600' : 'bg-indigo-100 text-indigo-600'}`}>
-          {!showCountdown && isTripDay ? <Sparkles size={20} className="animate-pulse" /> : <Calendar size={20} />}
+        <div className={`p-2.5 rounded-xl flex-shrink-0 ${!showCountdown && isTripDay ? 'bg-orange-100 text-orange-600' : 'bg-indigo-100 text-indigo-600'}`}>
+          {!showCountdown && isTripDay ? <Sparkles size={22} className="animate-pulse" /> : <Calendar size={22} />}
         </div>
-        
+
         <div className="flex-1 min-w-0">
           {!showCountdown && isTripDay ? (
             <div>
-              <div className="text-[10px] font-bold text-orange-500 uppercase tracking-wider">Today's Trip</div>
+              <div className="text-[10px] font-bold text-orange-500 uppercase tracking-wider mb-0.5">Today's Trip</div>
               <div className="text-sm font-bold text-gray-800 truncate">
                 {nextPin ? (
                   <>次は <span className="text-orange-600">{format(parseISO(nextPin.scheduled_at!), 'HH:mm')}</span> {nextPin.title}</>
-                ) : (
-                  '今日の予定はすべて完了しました！'
-                )}
+                ) : '今日の予定はすべて完了！'}
               </div>
             </div>
           ) : (
             <div>
-              <div className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider">Trip Countdown</div>
+              <div className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider mb-0.5">Trip Countdown</div>
               <div className="text-sm font-bold text-gray-800 truncate">
                 <span className="text-indigo-700">{firstPin.title}</span>
                 {'まであと '}
-                <span className="text-indigo-600 text-lg">
-                  {hoursUntil >= 0 && hoursUntil < 24
-                    ? `${hoursUntil} 時間`
-                    : `${daysUntil} 日`
-                  }
+                <span className="text-indigo-600 text-base font-extrabold">
+                  {hoursUntil >= 0 && hoursUntil < 24 ? `${hoursUntil}時間` : `${daysUntil}日`}
                 </span>
               </div>
             </div>
@@ -77,7 +75,7 @@ export default function CountdownWidget({ pins, onPinSelect }: CountdownWidgetPr
         {nextPin && (
           <button
             onClick={() => onPinSelect?.(nextPin)}
-            className="bg-indigo-500 hover:bg-indigo-600 active:scale-95 text-white text-[10px] font-bold px-3 py-2 rounded-xl transition-all flex-shrink-0 shadow-sm"
+            className="bg-indigo-500 active:bg-indigo-600 active:scale-95 text-white text-xs font-bold px-3 py-2.5 rounded-xl transition-all flex-shrink-0 shadow-sm"
           >
             CHECK
           </button>

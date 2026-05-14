@@ -1,11 +1,10 @@
 'use client'
 
 import { Pin } from '@/lib/supabase'
-import { motion, AnimatePresence } from 'framer-motion'
 import { format, parseISO, differenceInDays, differenceInHours } from 'date-fns'
 import { formatDistanceToNow } from 'date-fns'
 import { ja } from 'date-fns/locale'
-import { MapPin, Utensils, Bed, Camera, Droplets, ChevronUp, ChevronDown, ImageIcon, Heart, ThumbsUp, Smile, Clock, Trash2 } from 'lucide-react'
+import { MapPin, Utensils, Bed, Camera, Droplets, Clock, Trash2, ImageIcon } from 'lucide-react'
 import { useState } from 'react'
 
 type TimelineProps = {
@@ -15,28 +14,23 @@ type TimelineProps = {
 }
 
 export default function Timeline({ pins, onSelectPin, onDeletePin }: TimelineProps) {
-  const [isExpanded, setIsExpanded] = useState(false)
   const [activeTab, setActiveTab] = useState<'recent' | 'history'>('recent')
-  
-  // 最新順にソートして5件表示 (Plan)
-  const recentPins = [...pins]
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    .slice(0, 5)
 
-  // 訪問済みのピン (History)
+  const recentPins = [...pins]
+    .filter(p => p.status !== 'Visited')
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+
   const visitedPins = [...pins]
     .filter(p => p.status === 'Visited')
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
-  if (pins.length === 0) return null
-
-  const getCategoryIcon = (category: string) => {
+  const getCategoryIcon = (category: string, size = 16) => {
     switch (category) {
-      case 'Eat': return <Utensils size={14} className="text-rose-600" />
-      case 'Stay': return <Bed size={14} className="text-emerald-600" />
-      case 'Sightseeing': return <Camera size={14} className="text-sky-600" />
-      case 'Onsen': return <Droplets size={14} className="text-amber-600" />
-      default: return <MapPin size={14} className="text-teal-600" />
+      case 'Eat': return <Utensils size={size} className="text-rose-600" />
+      case 'Stay': return <Bed size={size} className="text-emerald-600" />
+      case 'Sightseeing': return <Camera size={size} className="text-sky-600" />
+      case 'Onsen': return <Droplets size={size} className="text-amber-600" />
+      default: return <MapPin size={size} className="text-teal-600" />
     }
   }
 
@@ -46,164 +40,160 @@ export default function Timeline({ pins, onSelectPin, onDeletePin }: TimelinePro
       case 'Stay': return 'bg-[var(--color-stay)]'
       case 'Sightseeing': return 'bg-[var(--color-sightseeing)]'
       case 'Onsen': return 'bg-[var(--color-onsen)]'
-      default: return 'bg-primary'
+      default: return 'bg-[var(--color-primary)]'
     }
   }
 
   return (
-    <div className="absolute top-4 left-4 z-10 w-64">
-      <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-lg border border-white/50 overflow-hidden transition-all">
-        <button 
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="w-full flex items-center justify-between p-3 text-sm font-bold text-gray-700 bg-white/50 hover:bg-white/80 transition-colors"
-        >
-          <span>タイムライン</span>
-          {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-        </button>
-        
-        <AnimatePresence>
-          {isExpanded && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden"
-            >
-              <div className="flex border-b border-gray-100">
-                <button 
-                  onClick={() => setActiveTab('recent')}
-                  className={`flex-1 py-2 text-xs font-bold transition-colors ${activeTab === 'recent' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-400'}`}
+    <div className="flex flex-col h-full bg-[#f8fcfb]" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+      {/* ヘッダー */}
+      <div className="bg-white border-b border-gray-100 px-4 pt-5 pb-0 flex-shrink-0">
+        <h1 className="text-xl font-bold text-gray-800 mb-3">タイムライン</h1>
+        <div className="flex">
+          <button
+            onClick={() => setActiveTab('recent')}
+            className={`flex-1 py-3 text-sm font-bold border-b-2 transition-colors ${
+              activeTab === 'recent'
+                ? 'border-[var(--color-primary)] text-teal-700'
+                : 'border-transparent text-gray-400'
+            }`}
+          >
+            スポット一覧 ({recentPins.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('history')}
+            className={`flex-1 py-3 text-sm font-bold border-b-2 transition-colors ${
+              activeTab === 'history'
+                ? 'border-orange-400 text-orange-600'
+                : 'border-transparent text-gray-400'
+            }`}
+          >
+            思い出 ({visitedPins.length})
+          </button>
+        </div>
+      </div>
+
+      {/* リスト */}
+      <div className="flex-1 overflow-y-auto scroll-touch scrollbar-hide">
+        {activeTab === 'recent' && (
+          <div className="p-4 space-y-3">
+            {recentPins.length === 0 && (
+              <div className="text-center text-gray-400 py-20 text-sm leading-relaxed">
+                まだスポットがありません。<br />マップを長押しして追加しましょう！
+              </div>
+            )}
+            {recentPins.map(pin => (
+              <div
+                key={pin.id}
+                onClick={() => onSelectPin(pin)}
+                className="bg-white rounded-2xl px-4 py-4 shadow-sm border border-gray-100 flex items-center gap-3 cursor-pointer active:scale-[0.98] transition-all group"
+              >
+                <div className={`p-3 rounded-xl ${getCategoryColor(pin.category)} flex-shrink-0`}>
+                  {getCategoryIcon(pin.category, 18)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-bold text-gray-800 text-base truncate">{pin.title}</div>
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
+                      pin.status === 'Confirmed' ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-50 text-indigo-600'
+                    }`}>
+                      {pin.status === 'Planned' ? '行きたい' : '予約済'}
+                    </span>
+                    {pin.scheduled_at && (
+                      <span className="text-xs bg-indigo-50 text-indigo-500 px-2.5 py-0.5 rounded-full flex items-center gap-1 font-bold">
+                        <Clock size={11} />
+                        {differenceInHours(parseISO(pin.scheduled_at), new Date()) >= 24
+                          ? `あと${differenceInDays(parseISO(pin.scheduled_at), new Date()) + 1}日`
+                          : format(parseISO(pin.scheduled_at), 'M/d HH:mm')
+                        }
+                      </span>
+                    )}
+                    <span className="text-xs text-gray-400">
+                      {formatDistanceToNow(new Date(pin.created_at), { addSuffix: true, locale: ja })}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={e => {
+                    e.stopPropagation()
+                    if (window.confirm('このスポットを削除しますか？')) onDeletePin(pin.id)
+                  }}
+                  className="p-2.5 text-gray-200 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all opacity-0 group-hover:opacity-100 active:opacity-100 flex-shrink-0"
                 >
-                  最近の追加
-                </button>
-                <button 
-                  onClick={() => setActiveTab('history')}
-                  className={`flex-1 py-2 text-xs font-bold transition-colors ${activeTab === 'history' ? 'text-orange-500 border-b-2 border-orange-500' : 'text-gray-400'}`}
-                >
-                  思い出 ({visitedPins.length})
+                  <Trash2 size={18} />
                 </button>
               </div>
+            ))}
+          </div>
+        )}
 
-              <div className="p-2 space-y-2 max-h-80 overflow-y-auto scrollbar-hide">
-                {activeTab === 'recent' && recentPins.map(pin => (
-                  <div 
-                    key={pin.id}
-                    onClick={() => onSelectPin(pin)}
-                    className="flex items-start gap-3 p-2 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors group"
-                  >
-                    <div className={`mt-0.5 p-1.5 rounded-full ${getCategoryColor(pin.category)} flex-shrink-0`}>
-                      {getCategoryIcon(pin.category)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-bold text-gray-800 truncate flex items-center gap-2">
-                        {pin.title}
-                        {pin.scheduled_at && (
-                          <span className="text-[10px] bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded flex items-center gap-0.5 font-bold">
-                            <Clock size={10} />
-                            {differenceInHours(parseISO(pin.scheduled_at), new Date()) >= 24 
-                              ? `あと ${differenceInDays(parseISO(pin.scheduled_at), new Date()) + 1}日`
-                              : `予定 ${format(parseISO(pin.scheduled_at), 'HH:mm')}`
-                            }
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-xs text-gray-500">
+        {activeTab === 'history' && (
+          <div className="p-4 space-y-4">
+            {visitedPins.length === 0 && (
+              <div className="text-center text-gray-400 py-20 text-sm leading-relaxed">
+                まだ思い出はありません。<br />チェックインして写真を残しましょう！
+              </div>
+            )}
+            {visitedPins.map(pin => (
+              <div
+                key={pin.id}
+                onClick={() => onSelectPin(pin)}
+                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 cursor-pointer active:scale-[0.98] transition-all group"
+              >
+                {pin.photo_url ? (
+                  <div className="w-full h-48 relative">
+                    <img src={pin.photo_url} alt={pin.title} className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                    <div className="absolute bottom-3 left-4 right-12">
+                      <div className="text-white font-bold text-lg truncate">{pin.title}</div>
+                      <div className="text-white/70 text-xs mt-0.5">
                         {formatDistanceToNow(new Date(pin.created_at), { addSuffix: true, locale: ja })}
                       </div>
                     </div>
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (window.confirm('このスポットを削除してもよろしいですか？')) {
-                          onDeletePin(pin.id);
-                        }
+                      onClick={e => {
+                        e.stopPropagation()
+                        if (window.confirm('このスポットを削除しますか？')) onDeletePin(pin.id)
                       }}
-                      className="p-1.5 text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                      title="削除"
+                      className="absolute bottom-3 right-3 p-2 bg-black/30 text-white/60 hover:text-white rounded-xl transition-all"
                     >
-                      <Trash2 size={14} />
+                      <Trash2 size={16} />
                     </button>
                   </div>
-                ))}
-
-                {activeTab === 'history' && visitedPins.map(pin => (
-                  <div 
-                    key={pin.id}
-                    onClick={() => onSelectPin(pin)}
-                    className="flex flex-col gap-2 p-2 rounded-xl hover:bg-orange-50/50 cursor-pointer transition-colors border border-transparent hover:border-orange-100 group"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className={`mt-0.5 p-1.5 rounded-full bg-orange-100 text-orange-600 flex-shrink-0`}>
-                        {getCategoryIcon(pin.category)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-bold text-gray-800 truncate flex items-center gap-2">
-                          {pin.title}
-                          {pin.scheduled_at && (
-                            <span className="text-[10px] bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded flex items-center gap-0.5 font-bold">
-                              <Clock size={10} />
-                              {differenceInHours(parseISO(pin.scheduled_at), new Date()) >= 24 
-                                ? `あと ${differenceInDays(parseISO(pin.scheduled_at), new Date()) + 1}日`
-                                : `予定 ${format(parseISO(pin.scheduled_at), 'HH:mm')}`
-                              }
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {formatDistanceToNow(new Date(pin.created_at), { addSuffix: true, locale: ja })}
-                        </div>
-                      </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (window.confirm('このスポットを削除してもよろしいですか？')) {
-                            onDeletePin(pin.id);
-                          }
-                        }}
-                        className="p-1.5 text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                        title="削除"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                ) : (
+                  <div className="w-full h-28 bg-orange-50 flex items-center justify-center relative">
+                    <ImageIcon size={36} className="text-orange-200" />
+                    <div className="absolute bottom-2 left-4 right-10">
+                      <div className="font-bold text-gray-700 truncate">{pin.title}</div>
                     </div>
-                    
-                    {pin.photo_url && (
-                      <div className="w-full aspect-video rounded-lg overflow-hidden mt-1 relative">
-                        <img src={pin.photo_url} alt="memory" className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
-                      </div>
-                    )}
-                    {!pin.photo_url && pin.notes && (
-                      <div className="text-xs text-gray-600 bg-white p-2 rounded-lg border border-gray-100">
-                        {pin.notes}
-                      </div>
-                    )}
-
-                    {/* スタンププレビュー */}
-                    {pin.reactions && Object.keys(pin.reactions).length > 0 && (
-                      <div className="flex gap-1.5 mt-1">
-                        {Object.entries(pin.reactions).map(([emoji, count]) => {
-                          const icon = emoji === 'heart' ? '❤️' : emoji === 'like' ? '👍' : '😋'
-                          return count > 0 ? (
-                            <div key={emoji} className="flex items-center gap-1 bg-white px-2 py-0.5 rounded-full border border-gray-200 text-[10px] shadow-sm">
-                              <span>{icon}</span><span className="font-bold text-gray-600">{count as number}</span>
-                            </div>
-                          ) : null
-                        })}
-                      </div>
-                    )}
+                    <button
+                      onClick={e => {
+                        e.stopPropagation()
+                        if (window.confirm('このスポットを削除しますか？')) onDeletePin(pin.id)
+                      }}
+                      className="absolute bottom-2 right-2 p-2 text-gray-300 hover:text-rose-500 rounded-xl transition-all"
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </div>
-                ))}
-                
-                {activeTab === 'history' && visitedPins.length === 0 && (
-                  <div className="text-center text-xs text-gray-400 py-6">
-                    まだ思い出はありません。<br/>ピンをチェックインして写真を残しましょう！
+                )}
+                {pin.reactions && Object.values(pin.reactions).some(v => (v as number) > 0) && (
+                  <div className="px-4 py-2.5 flex items-center gap-2">
+                    {Object.entries(pin.reactions).map(([emoji, count]) => {
+                      const icon = emoji === 'heart' ? '❤️' : emoji === 'like' ? '👍' : '😋'
+                      return (count as number) > 0 ? (
+                        <div key={emoji} className="flex items-center gap-1 bg-gray-50 px-2.5 py-1 rounded-full border border-gray-100 text-xs">
+                          <span>{icon}</span>
+                          <span className="font-bold text-gray-600">{count as number}</span>
+                        </div>
+                      ) : null
+                    })}
                   </div>
                 )}
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

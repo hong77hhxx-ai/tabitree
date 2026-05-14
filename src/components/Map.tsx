@@ -253,7 +253,7 @@ export default function MapComponent({
 
       <button
         onClick={handleMyLocation}
-        className="absolute bottom-24 right-4 bg-white p-3 rounded-full shadow-lg hover:bg-gray-50 active:scale-95 transition-all z-10 border border-gray-100"
+        className="absolute bottom-6 right-4 bg-white p-3.5 rounded-full shadow-lg active:scale-95 transition-all z-10 border border-gray-100"
       >
         <Crosshair size={24} className="text-indigo-600" />
       </button>

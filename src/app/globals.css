@@ -16,46 +16,83 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html, body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-nunito), Arial, Helvetica, sans-serif;
+  /* タップ時のハイライトを無効化 */
+  -webkit-tap-highlight-color: transparent;
+  /* ダブルタップズームを防止 */
   touch-action: manipulation;
-  overscroll-behavior-y: none;
+  /* iOS のバウンススクロールを防止 */
+  overscroll-behavior: none;
+  /* テキスト選択を防止（マップ操作時） */
+  -webkit-user-select: none;
+  user-select: none;
 }
 
+/* スクロール可能な要素では選択を許可 */
+input, textarea, [contenteditable] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* スクロールバーを非表示 */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* セーフエリア対応 */
+.safe-top { padding-top: var(--safe-top); }
+.safe-bottom { padding-bottom: var(--safe-bottom); }
+.pb-safe { padding-bottom: max(var(--safe-bottom), 0px); }
+
+/* GPS現在地マーカー */
 @keyframes pulse {
   0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.7); }
   70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(37, 99, 235, 0); }
   100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
 }
 
+.gps-marker {
+  width: 16px;
+  height: 16px;
+  background-color: #2563eb;
+  border: 2.5px solid white;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+  box-shadow: 0 0 6px rgba(0,0,0,0.3);
+}
+
+/* MapLibre Popup カスタム */
 .pin-popup .maplibregl-popup-content {
   padding: 0;
   background: transparent;
   border-radius: 1rem;
   box-shadow: none;
 }
-
 .pin-popup .maplibregl-popup-tip {
   border-top-color: white;
 }
 
-.gps-marker {
-  width: 14px;
-  height: 14px;
-  background-color: #2563eb;
-  border: 2px solid white;
-  border-radius: 50%;
-  animation: pulse 2s infinite;
-  box-shadow: 0 0 5px rgba(0,0,0,0.3);
+/* iOS momentum scroll */
+.scroll-touch {
+  -webkit-overflow-scrolling: touch;
+  overflow-y: auto;
 }

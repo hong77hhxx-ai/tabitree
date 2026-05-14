@@ -8,6 +8,7 @@ import BottomSheet from '@/components/BottomSheet'
 import Timeline from '@/components/Timeline'
 import CountdownWidget from '@/components/CountdownWidget'
 import NicknameModal from '@/components/NicknameModal'
+import BottomNav from '@/components/BottomNav'
 
 const MapComponent = dynamic(() => import('@/components/Map'), { ssr: false })
 
@@ -24,6 +25,7 @@ export default function MapPage() {
   const [tempLocation, setTempLocation] = useState<{lat: number, lng: number} | null>(null)
   const [centerLocation, setCenterLocation] = useState<{lat: number, lng: number} | null>(null)
   const [popupPin, setPopupPin] = useState<Pin | null>(null)
+  const [activeTab, setActiveTab] = useState<'map' | 'timeline'>('map')
 
   const [nickname, setNickname] = useState<string | null>(null)
   const [showNicknameModal, setShowNicknameModal] = useState(false)
@@ -144,6 +146,7 @@ export default function MapPage() {
   }
 
   const handleShowPopup = (pin: Pin) => {
+    setActiveTab('map')
     setPopupPin(pin)
     setCenterLocation({ lat: pin.lat, lng: pin.lng })
   }
@@ -205,19 +208,31 @@ export default function MapPage() {
         }} />
       )}
 
-      <CountdownWidget pins={pins} onPinSelect={handleShowPopup} />
-      <Timeline pins={pins} onSelectPin={handleShowPopup} onDeletePin={handleDeletePin} />
+      {/* マップ画面 */}
+      <div className={`flex-1 flex flex-col min-h-0 ${activeTab === 'map' ? 'flex' : 'hidden'}`}>
+        <CountdownWidget pins={pins} onPinSelect={handleShowPopup} />
+        <MapComponent
+          pins={pins}
+          onAddPin={handleAddPin}
+          onOpenSheet={handleOpenSheet}
+          popupPin={popupPin}
+          onClosePopup={() => setPopupPin(null)}
+          centerLocation={centerLocation}
+          userLocation={userLocation}
+          memberLocations={memberLocations}
+        />
+      </div>
 
-      <MapComponent
-        pins={pins}
-        onAddPin={handleAddPin}
-        onOpenSheet={handleOpenSheet}
-        popupPin={popupPin}
-        onClosePopup={() => setPopupPin(null)}
-        centerLocation={centerLocation}
-        userLocation={userLocation}
-        memberLocations={memberLocations}
-      />
+      {/* タイムライン画面 */}
+      <div className={`flex-1 min-h-0 overflow-hidden ${activeTab === 'timeline' ? 'flex flex-col' : 'hidden'}`}>
+        <Timeline
+          pins={pins}
+          onSelectPin={handleShowPopup}
+          onDeletePin={handleDeletePin}
+        />
+      </div>
+
+      <BottomNav activeTab={activeTab} onChange={setActiveTab} />
 
       <BottomSheet
         isOpen={isBottomSheetOpen}
