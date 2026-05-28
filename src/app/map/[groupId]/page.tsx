@@ -10,6 +10,7 @@ import CountdownWidget from '@/components/CountdownWidget'
 import NicknameModal from '@/components/NicknameModal'
 import BottomNav from '@/components/BottomNav'
 import HereWidget from '@/components/HereWidget'
+import Profile from '@/components/Profile'
 
 const MapComponent = dynamic(() => import('@/components/Map'), { ssr: false })
 
@@ -26,7 +27,7 @@ export default function MapPage() {
   const [tempLocation, setTempLocation] = useState<{lat: number, lng: number} | null>(null)
   const [centerLocation, setCenterLocation] = useState<{lat: number, lng: number} | null>(null)
   const [popupPin, setPopupPin] = useState<Pin | null>(null)
-  const [activeTab, setActiveTab] = useState<'map' | 'timeline'>('map')
+  const [activeTab, setActiveTab] = useState<'map' | 'timeline' | 'profile'>('map')
 
   const [nickname, setNickname] = useState<string | null>(null)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
@@ -264,6 +265,18 @@ export default function MapPage() {
           pins={pins}
           onSelectPin={handleShowPopup}
           onDeletePin={handleDeletePin}
+        />
+      </div>
+
+      {/* プロフィール画面 */}
+      <div className={`flex-1 min-h-0 overflow-hidden ${activeTab === 'profile' ? 'flex flex-col' : 'hidden'}`}>
+        <Profile
+          nickname={nickname}
+          avatarUrl={avatarUrl}
+          onSave={(newName, newAvatar) => {
+            setNickname(newName)
+            setAvatarUrl(newAvatar)
+          }}
         />
       </div>
 
