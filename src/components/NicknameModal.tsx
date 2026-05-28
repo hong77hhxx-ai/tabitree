@@ -80,14 +80,27 @@ export default function NicknameModal({ onConfirm }: Props) {
             <div className="absolute bottom-0 right-0 bg-[var(--color-primary)] rounded-full p-2 border-2 border-white shadow group-active:scale-95 transition-transform">
               <Camera size={16} className="text-white" />
             </div>
+            {/* ライブラリから選択（capture なし） */}
             <input
               type="file"
               accept="image/*"
-              capture="environment"
               className="hidden"
               onChange={handleAvatarChange}
               disabled={isUploading}
             />
+          </label>
+        </div>
+
+        {/* 撮影ボタン（別途） */}
+        <div className="flex justify-center gap-3 -mt-2 mb-2">
+          <label className={`flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-full border cursor-pointer transition-all active:scale-95 ${isUploading ? 'opacity-50 pointer-events-none' : ''} bg-gray-50 border-gray-200 text-gray-600`}>
+            <Camera size={14} />
+            カメラ
+            <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleAvatarChange} disabled={isUploading} />
+          </label>
+          <label className={`flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-full border cursor-pointer transition-all active:scale-95 ${isUploading ? 'opacity-50 pointer-events-none' : ''} bg-gray-50 border-gray-200 text-gray-600`}>
+            🖼️ ライブラリ
+            <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} disabled={isUploading} />
           </label>
         </div>
 
