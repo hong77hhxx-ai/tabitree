@@ -36,6 +36,12 @@ yarn-error.log*
 # vercel
 .vercel
 
+# claude worktrees
+.claude/
+
+# unrelated projects
+antigravity-video/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
