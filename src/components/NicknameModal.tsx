@@ -83,7 +83,7 @@ export default function NicknameModal({ onConfirm }: Props) {
             <input
               type="file"
               accept="image/*"
-              capture="user"
+              capture="environment"
               className="hidden"
               onChange={handleAvatarChange}
               disabled={isUploading}
