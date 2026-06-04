@@ -1,23 +1,18 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
-import Map, { Marker, Popup, MapLayerMouseEvent, MapRef } from 'react-map-gl/maplibre'
-import 'maplibre-gl/dist/maplibre-gl.css'
+import { useState, useEffect } from 'react'
+import {
+  APIProvider,
+  Map,
+  AdvancedMarker,
+  useMap,
+} from '@vis.gl/react-google-maps'
 import { Pin, MemberLocation } from '@/lib/supabase'
 import { MapPin, Utensils, Bed, Camera, Droplets, Crosshair, ChevronRight, X, Users } from 'lucide-react'
 
-const mapStyle = {
-  version: 8,
-  sources: {
-    osm: {
-      type: 'raster',
-      tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-      tileSize: 256,
-      attribution: '&copy; OpenStreetMap Contributors',
-    },
-  },
-  layers: [{ id: 'osm', type: 'raster', source: 'osm', minzoom: 0, maxzoom: 19 }],
-} as any
+const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''
+// AdvancedMarkerにはMap IDが必須。デモ用のDEMO_MAP_IDを利用
+const MAP_ID = process.env.NEXT_PUBLIC_GOOGLE_MAP_ID || 'DEMO_MAP_ID'
 
 type MapComponentProps = {
   pins: Pin[]
@@ -37,7 +32,6 @@ const STATUS_LABEL: Record<string, string> = {
   Planned: '行きたい', Confirmed: '予約済', Visited: '行った',
 }
 
-// メンバーアバターの色（user_idをもとに固定色）
 const MEMBER_COLORS = [
   'bg-violet-500', 'bg-pink-500', 'bg-orange-500',
   'bg-sky-500', 'bg-emerald-500', 'bg-amber-500',
@@ -48,7 +42,6 @@ const getMemberColor = (userId: string) => {
   return MEMBER_COLORS[Math.abs(hash) % MEMBER_COLORS.length]
 }
 
-// 更新時刻から透明度と「鮮度ラベル」を計算
 const getLocationFreshness = (updatedAt: string) => {
   const age = Date.now() - new Date(updatedAt).getTime()
   const mins = age / 60000
@@ -58,106 +51,116 @@ const getLocationFreshness = (updatedAt: string) => {
   return           { opacity: 0.2,  label: `${Math.floor(mins)}分前` }
 }
 
-export default function MapComponent({
+const getCategoryIcon = (category: string, size = 20) => {
+  switch (category) {
+    case 'Eat': return <Utensils size={size} className="text-rose-600" />
+    case 'Stay': return <Bed size={size} className="text-emerald-600" />
+    case 'Sightseeing': return <Camera size={size} className="text-sky-600" />
+    case 'Onsen': return <Droplets size={size} className="text-amber-600" />
+    case 'Here': return <Users size={size} className="text-violet-600" />
+    default: return <MapPin size={size} className="text-teal-600" />
+  }
+}
+
+const getCategoryColor = (category: string) => {
+  switch (category) {
+    case 'Eat': return 'bg-[var(--color-eat)]'
+    case 'Stay': return 'bg-[var(--color-stay)]'
+    case 'Sightseeing': return 'bg-[var(--color-sightseeing)]'
+    case 'Onsen': return 'bg-[var(--color-onsen)]'
+    case 'Here': return 'bg-violet-100'
+    default: return 'bg-primary'
+  }
+}
+
+// 地図の中心移動を制御する内部コンポーネント
+function MapController({ centerLocation }: { centerLocation?: { lat: number, lng: number } | null }) {
+  const map = useMap()
+  useEffect(() => {
+    if (map && centerLocation) {
+      map.panTo({ lat: centerLocation.lat, lng: centerLocation.lng })
+      map.setZoom(16)
+    }
+  }, [map, centerLocation])
+  return null
+}
+
+export default function MapComponent(props: MapComponentProps) {
+  const [addMode, setAddMode] = useState(false)
+
+  const handleAddPin = (lat: number, lng: number) => {
+    props.onAddPin(lat, lng)
+    setAddMode(false)
+  }
+
+  return (
+    <APIProvider apiKey={GOOGLE_MAPS_API_KEY}>
+      <div className="w-full h-full flex-1 relative">
+        <MapInnerWithMode
+          {...props}
+          addMode={addMode}
+          onAddPin={handleAddPin}
+          onToggleAddMode={() => setAddMode(!addMode)}
+        />
+      </div>
+    </APIProvider>
+  )
+}
+
+function MapInnerWithMode({
   pins, onAddPin, onOpenSheet, popupPin, onClosePopup,
   centerLocation, userLocation, memberLocations = [],
-}: MapComponentProps) {
-  const [viewState, setViewState] = useState({
-    longitude: 135.5023, latitude: 34.6937, zoom: 12,
-  })
-  const mapRef = useRef<MapRef>(null)
-  const longPressTimer = useRef<NodeJS.Timeout | null>(null)
-
-  useEffect(() => {
-    if (centerLocation) {
-      mapRef.current?.flyTo({
-        center: [centerLocation.lng, centerLocation.lat],
-        zoom: 15, duration: 800,
-      })
-    }
-  }, [centerLocation])
+  addMode, onToggleAddMode,
+}: MapComponentProps & { addMode: boolean, onToggleAddMode: () => void }) {
+  const map = useMap()
 
   const handleMyLocation = () => {
-    if (userLocation) {
-      mapRef.current?.flyTo({ center: [userLocation.lng, userLocation.lat], zoom: 15, duration: 1000 })
+    if (userLocation && map) {
+      map.panTo({ lat: userLocation.lat, lng: userLocation.lng })
+      map.setZoom(16)
     } else {
       alert('現在地を取得中です。ブラウザの位置情報設定を確認してください。')
     }
   }
 
-  const handleTouchStart = (e: any) => {
-    if (e.originalEvent.touches?.length === 1) {
-      const { lng, lat } = e.lngLat
-      longPressTimer.current = setTimeout(() => onAddPin(lat, lng), 500)
-    }
-  }
-  const handleTouchEnd = () => {
-    if (longPressTimer.current) clearTimeout(longPressTimer.current)
-  }
-  const handleContextMenu = (e: MapLayerMouseEvent) => {
-    e.preventDefault()
-    onAddPin(e.lngLat.lat, e.lngLat.lng)
-  }
-
-  const getCategoryIcon = (category: string, size = 20) => {
-    switch (category) {
-      case 'Eat': return <Utensils size={size} className="text-rose-600" />
-      case 'Stay': return <Bed size={size} className="text-emerald-600" />
-      case 'Sightseeing': return <Camera size={size} className="text-sky-600" />
-      case 'Onsen': return <Droplets size={size} className="text-amber-600" />
-      case 'Here': return <Users size={size} className="text-violet-600" />
-      default: return <MapPin size={size} className="text-teal-600" />
+  const handleMapClick = (e: any) => {
+    if (addMode) {
+      const latLng = e.detail?.latLng
+      if (latLng) onAddPin(latLng.lat, latLng.lng)
+    } else {
+      onClosePopup?.()
     }
   }
 
-  const getCategoryColor = (category: string) => {
-    switch (category) {
-      case 'Eat': return 'bg-[var(--color-eat)]'
-      case 'Stay': return 'bg-[var(--color-stay)]'
-      case 'Sightseeing': return 'bg-[var(--color-sightseeing)]'
-      case 'Onsen': return 'bg-[var(--color-onsen)]'
-      case 'Here': return 'bg-violet-100'
-      default: return 'bg-primary'
+  const visiblePins = pins.filter(pin => {
+    if (pin.category === 'Here' && pin.scheduled_at) {
+      return new Date(pin.scheduled_at) > new Date()
     }
-  }
+    return true
+  })
 
   return (
-    <div className="w-full h-full flex-1 relative">
+    <div className="w-full h-full relative">
       <Map
-        {...viewState}
-        ref={mapRef}
-        onMove={evt => setViewState(evt.viewState)}
-        mapStyle={mapStyle}
-        style={{ width: '100%', height: '100%' }}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-        onTouchMove={handleTouchEnd}
-        onContextMenu={handleContextMenu}
-        onClick={() => onClosePopup?.()}
-        dragPan={true}
-        dragRotate={false}
+        mapId={MAP_ID}
+        defaultCenter={{ lat: 34.6937, lng: 135.5023 }}
+        defaultZoom={12}
+        gestureHandling="greedy"
+        disableDefaultUI={true}
+        clickableIcons={false}
+        style={{ width: '100%', height: '100%', cursor: addMode ? 'crosshair' : 'grab' }}
+        onClick={handleMapClick}
       >
-        {/* スポットのピン */}
-        {pins.filter(pin => {
-          // Hereピンは期限切れなら非表示
-          if (pin.category === 'Here' && pin.scheduled_at) {
-            return new Date(pin.scheduled_at) > new Date()
-          }
-          return true
-        }).map(pin => (
-          <Marker
+        <MapController centerLocation={centerLocation} />
+
+        {visiblePins.map(pin => (
+          <AdvancedMarker
             key={pin.id}
-            longitude={pin.lng}
-            latitude={pin.lat}
-            anchor="bottom"
-            onClick={e => {
-              e.originalEvent.stopPropagation()
-              onOpenSheet(pin)
-            }}
+            position={{ lat: pin.lat, lng: pin.lng }}
+            onClick={() => onOpenSheet(pin)}
           >
             {pin.category === 'Here' ? (
-              // 今ここにいるよピン：パルスアニメーション
-              <div className="flex flex-col items-center group cursor-pointer">
+              <div className="flex flex-col items-center cursor-pointer">
                 <div className="relative w-12 h-12 flex items-center justify-center">
                   <div className="here-pulse-ring" />
                   <div className="relative z-10 w-10 h-10 rounded-full bg-violet-500 border-2 border-white shadow-lg flex items-center justify-center">
@@ -169,9 +172,8 @@ export default function MapComponent({
                 </div>
               </div>
             ) : pin.status === 'Visited' && pin.photo_url ? (
-              // 訪問済み写真ピン：フォトカード形式
-              <div className="flex flex-col items-center group cursor-pointer drop-shadow-lg">
-                <div className="bg-white p-1.5 rounded-2xl border-2 border-orange-300 shadow-md transform transition-transform group-hover:scale-105 group-hover:-translate-y-0.5">
+              <div className="flex flex-col items-center cursor-pointer drop-shadow-lg">
+                <div className="bg-white p-1.5 rounded-2xl border-2 border-orange-300 shadow-md">
                   <div className="w-20 h-20 rounded-xl overflow-hidden">
                     <img src={pin.photo_url} alt={pin.title} className="w-full h-full object-cover" />
                   </div>
@@ -184,34 +186,24 @@ export default function MapComponent({
                 <div className="w-0 h-0 border-l-[7px] border-r-[7px] border-t-[9px] border-l-transparent border-r-transparent border-t-orange-300" />
               </div>
             ) : (
-              // 通常ピン
-              <div className="flex flex-col items-center group cursor-pointer">
-                <div className={`p-3 rounded-full shadow-md transform transition-transform group-hover:scale-110 flex items-center justify-center border-2
-                  ${pin.status === 'Visited' ? 'border-orange-300 bg-orange-50 scale-105' : `border-white ${getCategoryColor(pin.category)}`}`}>
+              <div className="flex flex-col items-center cursor-pointer">
+                <div className={`p-3 rounded-full shadow-md flex items-center justify-center border-2
+                  ${pin.status === 'Visited' ? 'border-orange-300 bg-orange-50' : `border-white ${getCategoryColor(pin.category)}`}`}>
                   {getCategoryIcon(pin.category, 24)}
                 </div>
                 {pin.title && (
-                  <div className="text-xs font-bold text-center mt-1 bg-white/90 px-2 py-0.5 rounded-full backdrop-blur-sm shadow-sm whitespace-nowrap text-gray-800 border border-gray-100">
+                  <div className="text-xs font-bold text-center mt-1 bg-white/90 px-2 py-0.5 rounded-full shadow-sm whitespace-nowrap text-gray-800 border border-gray-100">
                     {pin.title}
                   </div>
                 )}
               </div>
             )}
-          </Marker>
+          </AdvancedMarker>
         ))}
 
-        {/* 吹き出し */}
         {popupPin && (
-          <Popup
-            longitude={popupPin.lng}
-            latitude={popupPin.lat}
-            anchor="bottom"
-            offset={50}
-            closeButton={false}
-            closeOnClick={false}
-            className="pin-popup"
-          >
-            <div className="relative bg-white rounded-2xl shadow-xl overflow-hidden w-56 border border-gray-100">
+          <AdvancedMarker position={{ lat: popupPin.lat, lng: popupPin.lng }} zIndex={1000}>
+            <div className="relative bg-white rounded-2xl shadow-xl overflow-hidden w-56 border border-gray-100 mb-12">
               {popupPin.photo_url && (
                 <div className="w-full h-28 overflow-hidden">
                   <img src={popupPin.photo_url} alt={popupPin.title} className="w-full h-full object-cover" />
@@ -241,38 +233,31 @@ export default function MapComponent({
                 )}
                 <button
                   onClick={() => onOpenSheet(popupPin)}
-                  className="w-full flex items-center justify-center gap-1 bg-[var(--color-primary)] text-white text-xs font-bold py-2 rounded-xl hover:opacity-90 transition-all"
+                  className="w-full flex items-center justify-center gap-1 bg-[var(--color-primary)] text-white text-xs font-bold py-2 rounded-xl transition-all"
                 >
                   詳細を編集 <ChevronRight size={14} />
                 </button>
               </div>
               <button
                 onClick={e => { e.stopPropagation(); onClosePopup?.() }}
-                className="absolute top-2 right-2 bg-black/30 text-white rounded-full p-0.5 hover:bg-black/50 transition-all"
+                className="absolute top-2 right-2 bg-black/30 text-white rounded-full p-0.5"
               >
                 <X size={12} />
               </button>
             </div>
-          </Popup>
+          </AdvancedMarker>
         )}
 
-        {/* 自分の現在地 */}
         {userLocation && (
-          <Marker longitude={userLocation.lng} latitude={userLocation.lat} anchor="center">
+          <AdvancedMarker position={{ lat: userLocation.lat, lng: userLocation.lng }}>
             <div className="gps-marker" />
-          </Marker>
+          </AdvancedMarker>
         )}
 
-        {/* 他のメンバーの位置 */}
         {memberLocations.map(member => {
           const { opacity, label } = getLocationFreshness(member.updated_at)
           return (
-            <Marker
-              key={member.user_id}
-              longitude={member.lng}
-              latitude={member.lat}
-              anchor="bottom"
-            >
+            <AdvancedMarker key={member.user_id} position={{ lat: member.lat, lng: member.lng }}>
               <div className="flex flex-col items-center" style={{ opacity }}>
                 <div className={`w-10 h-10 rounded-full ${getMemberColor(member.user_id)} flex items-center justify-center text-white text-sm font-bold shadow-md border-2 border-white overflow-hidden`}>
                   {member.avatar_url ? (
@@ -286,11 +271,29 @@ export default function MapComponent({
                   <span className="text-gray-400 font-normal">{label}</span>
                 </div>
               </div>
-            </Marker>
+            </AdvancedMarker>
           )
         })}
       </Map>
 
+      {/* ピン追加モードのヒント */}
+      {addMode && (
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-20 bg-teal-600 text-white text-sm font-bold px-4 py-2 rounded-full shadow-lg whitespace-nowrap">
+          地図をタップしてスポットを追加
+        </div>
+      )}
+
+      {/* スポット追加ボタン */}
+      <button
+        onClick={onToggleAddMode}
+        className={`absolute bottom-24 right-4 p-3.5 rounded-full shadow-lg active:scale-95 transition-all z-10 border ${
+          addMode ? 'bg-teal-600 text-white border-teal-600' : 'bg-white text-teal-600 border-gray-100'
+        }`}
+      >
+        {addMode ? <X size={24} /> : <MapPin size={24} />}
+      </button>
+
+      {/* 現在地ボタン */}
       <button
         onClick={handleMyLocation}
         className="absolute bottom-6 right-4 bg-white p-3.5 rounded-full shadow-lg active:scale-95 transition-all z-10 border border-gray-100"
