@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Camera, Save, CheckCircle, Loader2 } from 'lucide-react'
 import { uploadAvatar, getUserId } from '@/lib/supabase'
 
@@ -16,6 +16,12 @@ export default function Profile({ nickname, avatarUrl, onSave }: ProfileProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [saved, setSaved] = useState(false)
+
+  // 親からpropsが更新されたら（localStorage読み込み後）同期する
+  useEffect(() => {
+    setName(nickname || '')
+    setCurrentAvatar(avatarUrl)
+  }, [nickname, avatarUrl])
 
   const displayAvatar = previewUrl || currentAvatar
   const initial = name.trim().charAt(0).toUpperCase()
