@@ -118,7 +118,7 @@ export default function Timeline({ pins, onSelectPin, onDeletePin }: TimelinePro
                     e.stopPropagation()
                     if (window.confirm('このスポットを削除しますか？')) onDeletePin(pin.id)
                   }}
-                  className="p-2.5 text-gray-200 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all opacity-0 group-hover:opacity-100 active:opacity-100 flex-shrink-0"
+                  className="p-2.5 text-gray-300 hover:text-rose-500 active:text-rose-500 hover:bg-rose-50 rounded-xl transition-all flex-shrink-0"
                 >
                   <Trash2 size={18} />
                 </button>
