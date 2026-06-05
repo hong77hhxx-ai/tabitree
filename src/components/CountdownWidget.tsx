@@ -39,72 +39,62 @@ export default function CountdownWidget({ pins, onPinSelect }: CountdownWidgetPr
 
   return (
     <div
-      className="absolute left-4 z-20 flex flex-col items-start"
+      className="absolute left-4 z-20 flex flex-col-reverse items-start gap-2"
       style={{ bottom: 'max(env(safe-area-inset-bottom, 0px) + 88px, 88px)' }}
     >
-      <AnimatePresence mode="wait">
-        {!isExpanded ? (
-          // カレンダーアイコンのみ
-          <motion.button
-            key="icon"
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.8, opacity: 0 }}
-            onClick={() => setIsExpanded(true)}
-            className={`relative p-3 rounded-2xl shadow-lg border border-white/60 bg-white/95 backdrop-blur-md active:scale-95 transition-transform`}
-          >
-            <div className={`p-1.5 rounded-xl ${iconColor}`}>
-              {!showCountdown && isTripDay ? <Sparkles size={22} className="animate-pulse" /> : <Calendar size={22} />}
-            </div>
-            {/* 通知ドット */}
-            <span className="absolute -top-1 -right-1 w-3 h-3 bg-rose-500 rounded-full border-2 border-white" />
-          </motion.button>
-        ) : (
-          // 展開時：フルバー
-          <motion.div
-            key="bar"
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 20, opacity: 0 }}
-            className="bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-white/60 px-4 py-3 flex items-center gap-3 w-[calc(100vw-2rem)] max-w-sm"
-          >
-            <button
-              onClick={() => setIsExpanded(false)}
-              className={`p-2.5 rounded-xl flex-shrink-0 active:scale-95 transition-transform ${iconColor}`}
-            >
-              {!showCountdown && isTripDay ? <Sparkles size={22} className="animate-pulse" /> : <Calendar size={22} />}
-            </button>
+      {/* カレンダーアイコン（常時表示・下に固定） */}
+      <button
+        onClick={() => setIsExpanded(v => !v)}
+        className="relative p-2.5 rounded-2xl shadow-lg border border-white/60 bg-white/95 backdrop-blur-md active:scale-95 transition-transform"
+      >
+        <div className={`p-1.5 rounded-xl ${iconColor}`}>
+          {!showCountdown && isTripDay ? <Sparkles size={22} className="animate-pulse" /> : <Calendar size={22} />}
+        </div>
+        {!isExpanded && (
+          <span className="absolute -top-1 -right-1 w-3 h-3 bg-rose-500 rounded-full border-2 border-white" />
+        )}
+      </button>
 
-            <div className="flex-1 min-w-0">
-              {!showCountdown && isTripDay ? (
-                <div>
-                  <div className="text-[10px] font-bold text-orange-500 uppercase tracking-wider mb-0.5">Today's Trip</div>
-                  <div className="text-sm font-bold text-gray-800 truncate">
-                    {nextPin ? (
-                      <>次は <span className="text-orange-600">{format(parseISO(nextPin.scheduled_at!), 'HH:mm')}</span> {nextPin.title}</>
-                    ) : '今日の予定はすべて完了！'}
-                  </div>
+      {/* 上方向に出るカードタブ */}
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div
+            key="card"
+            initial={{ y: 12, opacity: 0, scale: 0.96 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ y: 12, opacity: 0, scale: 0.96 }}
+            transition={{ type: 'spring', damping: 22, stiffness: 280 }}
+            className="origin-bottom-left bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-white/60 p-3 w-60"
+          >
+            {!showCountdown && isTripDay ? (
+              <>
+                <div className="text-[10px] font-bold text-orange-500 uppercase tracking-wider mb-1">Today's Trip</div>
+                <div className="text-sm font-bold text-gray-800 leading-snug">
+                  {nextPin ? (
+                    <>次は <span className="text-orange-600">{format(parseISO(nextPin.scheduled_at!), 'HH:mm')}</span><br />{nextPin.title}</>
+                  ) : '今日の予定はすべて完了！'}
                 </div>
-              ) : (
-                <div>
-                  <div className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider mb-0.5">Trip Countdown</div>
-                  <div className="text-sm font-bold text-gray-800 truncate">
-                    <span className="text-indigo-700">{firstPin.title}</span>
-                    {'まであと '}
-                    <span className="text-indigo-600 text-base font-extrabold">
-                      {hoursUntil >= 0 && hoursUntil < 24 ? `${hoursUntil}時間` : `${daysUntil}日`}
-                    </span>
-                  </div>
+              </>
+            ) : (
+              <>
+                <div className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider mb-1">Trip Countdown</div>
+                <div className="text-sm font-bold text-gray-800 leading-snug truncate">{firstPin.title}</div>
+                <div className="text-gray-500 text-xs mt-0.5">
+                  まであと
+                  <span className="text-indigo-600 text-xl font-extrabold mx-1">
+                    {hoursUntil >= 0 && hoursUntil < 24 ? hoursUntil : daysUntil}
+                  </span>
+                  {hoursUntil >= 0 && hoursUntil < 24 ? '時間' : '日'}
                 </div>
-              )}
-            </div>
+              </>
+            )}
 
             {nextPin && (
               <button
                 onClick={() => onPinSelect?.(nextPin)}
-                className="bg-indigo-500 active:bg-indigo-600 active:scale-95 text-white text-xs font-bold px-3 py-2.5 rounded-xl transition-all flex-shrink-0 shadow-sm"
+                className="mt-3 w-full bg-indigo-500 active:bg-indigo-600 active:scale-95 text-white text-xs font-bold py-2.5 rounded-xl transition-all shadow-sm"
               >
-                CHECK
+                地図で確認
               </button>
             )}
           </motion.div>
