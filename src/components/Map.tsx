@@ -107,12 +107,15 @@ export default function MapComponent(props: MapComponentProps) {
   )
 }
 
+type PinFilter = 'all' | 'plan' | 'memory'
+
 function MapInnerWithMode({
   pins, onAddPin, onOpenSheet, popupPin, onClosePopup,
   centerLocation, userLocation, memberLocations = [],
   addMode, onToggleAddMode,
 }: MapComponentProps & { addMode: boolean, onToggleAddMode: () => void }) {
   const map = useMap()
+  const [filter, setFilter] = useState<PinFilter>('all')
 
   const handleMyLocation = () => {
     if (userLocation && map) {
@@ -133,14 +136,45 @@ function MapInnerWithMode({
   }
 
   const visiblePins = pins.filter(pin => {
+    // 期限切れHereピンは常に非表示
     if (pin.category === 'Here' && pin.scheduled_at) {
-      return new Date(pin.scheduled_at) > new Date()
+      if (new Date(pin.scheduled_at) <= new Date()) return false
     }
+    // フィルター適用（Hereピンはフィルター対象外で常に表示）
+    if (pin.category === 'Here') return true
+    if (filter === 'plan') return pin.status === 'Planned' || pin.status === 'Confirmed'
+    if (filter === 'memory') return pin.status === 'Visited'
     return true
   })
 
+  const FILTERS: { id: PinFilter, label: string }[] = [
+    { id: 'all', label: 'すべて' },
+    { id: 'plan', label: '予定' },
+    { id: 'memory', label: '思い出' },
+  ]
+
   return (
     <div className="w-full h-full relative">
+      {/* ピンフィルター */}
+      <div
+        className="absolute left-1/2 -translate-x-1/2 z-10 bg-white/95 backdrop-blur-md rounded-full shadow-lg border border-gray-100 p-1 flex gap-1"
+        style={{ bottom: 'max(env(safe-area-inset-bottom, 0px) + 24px, 24px)' }}
+      >
+        {FILTERS.map(f => (
+          <button
+            key={f.id}
+            onClick={() => setFilter(f.id)}
+            className={`px-4 py-2 text-sm font-bold rounded-full transition-all ${
+              filter === f.id
+                ? 'bg-[var(--color-primary)] text-white shadow-sm'
+                : 'text-gray-500 active:bg-gray-100'
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
       <Map
         mapId={MAP_ID}
         defaultCenter={{ lat: 34.6937, lng: 135.5023 }}
