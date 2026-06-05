@@ -46,35 +46,47 @@ export type Group = {
   created_at: string
 }
 
-// マップの色パレット
+// マップの色パレット（6色）
 export const GROUP_COLORS = [
-  '#88D8C0', '#FFB3BA', '#BAE1FF', '#FFD8A8',
-  '#C3B1E1', '#A8E6CF', '#FFAAA5', '#B5EAD7',
+  '#88D8C0', '#FFB3BA', '#BAE1FF',
+  '#FFD8A8', '#C3B1E1', '#A8E6CF',
 ]
 
-// 参加したマップのID一覧をlocalStorageで管理（認証なし）
-export const getJoinedGroupIds = (): string[] => {
+// localStorageに保存する参加グループの形
+export type StoredGroup = {
+  id: string
+  name: string
+  color: string | null
+  joinedAt: string
+}
+
+const GROUPS_KEY = 'tabitree_groups'
+
+// 参加したマップをlocalStorageで管理（認証なし）
+export const getStoredGroups = (): StoredGroup[] => {
   if (typeof window === 'undefined') return []
   try {
-    return JSON.parse(localStorage.getItem('tabitree_joined_groups') || '[]')
+    return JSON.parse(localStorage.getItem(GROUPS_KEY) || '[]')
   } catch {
     return []
   }
 }
 
-export const addJoinedGroup = (groupId: string) => {
+export const addStoredGroup = (group: { id: string, name: string, color: string | null }) => {
   if (typeof window === 'undefined') return
-  const ids = getJoinedGroupIds()
-  if (!ids.includes(groupId)) {
-    // 最新を先頭に
-    localStorage.setItem('tabitree_joined_groups', JSON.stringify([groupId, ...ids]))
-  }
+  const groups = getStoredGroups()
+  if (groups.some(g => g.id === group.id)) return
+  const updated: StoredGroup[] = [
+    { ...group, joinedAt: new Date().toISOString() },
+    ...groups,
+  ]
+  localStorage.setItem(GROUPS_KEY, JSON.stringify(updated))
 }
 
-export const removeJoinedGroup = (groupId: string) => {
+export const removeStoredGroup = (id: string) => {
   if (typeof window === 'undefined') return
-  const ids = getJoinedGroupIds().filter(id => id !== groupId)
-  localStorage.setItem('tabitree_joined_groups', JSON.stringify(ids))
+  const updated = getStoredGroups().filter(g => g.id !== id)
+  localStorage.setItem(GROUPS_KEY, JSON.stringify(updated))
 }
 
 export type MemberLocation = {

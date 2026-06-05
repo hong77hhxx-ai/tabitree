@@ -2,6 +2,7 @@
 CREATE TABLE public.groups (
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
   name text NOT NULL,
+  color text, -- グループ識別用カラー（例: #88D8C0）。null可
   created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
