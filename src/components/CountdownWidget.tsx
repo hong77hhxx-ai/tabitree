@@ -39,7 +39,7 @@ export default function CountdownWidget({ pins, onPinSelect }: CountdownWidgetPr
 
   return (
     <div
-      className="absolute left-1/2 -translate-x-1/2 z-20 flex flex-col items-center"
+      className="absolute left-4 z-20 flex flex-col items-start"
       style={{ top: 'max(env(safe-area-inset-top, 0px) + 12px, 16px)' }}
     >
       <AnimatePresence mode="wait">
