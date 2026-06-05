@@ -157,14 +157,14 @@ function MapInnerWithMode({
     <div className="w-full h-full relative">
       {/* ピンフィルター */}
       <div
-        className="absolute left-1/2 -translate-x-1/2 z-10 bg-white/95 backdrop-blur-md rounded-full shadow-lg border border-gray-100 p-1 flex gap-1"
+        className="absolute left-1/2 -translate-x-1/2 z-10 bg-white/95 backdrop-blur-md rounded-full shadow-lg border border-gray-100 p-1 flex gap-1 w-max"
         style={{ bottom: 'max(env(safe-area-inset-bottom, 0px) + 24px, 24px)' }}
       >
         {FILTERS.map(f => (
           <button
             key={f.id}
             onClick={() => setFilter(f.id)}
-            className={`px-4 py-2 text-sm font-bold rounded-full transition-all ${
+            className={`px-4 py-2 text-sm font-bold rounded-full transition-all whitespace-nowrap ${
               filter === f.id
                 ? 'bg-[var(--color-primary)] text-white shadow-sm'
                 : 'text-gray-500 active:bg-gray-100'
