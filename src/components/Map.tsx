@@ -220,7 +220,8 @@ function MapInnerWithMode({
                 <div className="w-0 h-0 border-l-[7px] border-r-[7px] border-t-[9px] border-l-transparent border-r-transparent border-t-orange-300" />
               </div>
             ) : (
-              <div className="flex flex-col items-center cursor-pointer">
+              // 透明な余白(p-2)でタップ判定を広げる
+              <div className="flex flex-col items-center cursor-pointer p-2 -m-2">
                 <div className={`p-3 rounded-full shadow-md flex items-center justify-center border-2
                   ${pin.status === 'Visited' ? 'border-orange-300 bg-orange-50' : `border-white ${getCategoryColor(pin.category)}`}`}>
                   {getCategoryIcon(pin.category, 24)}
