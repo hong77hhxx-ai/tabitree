@@ -225,7 +225,7 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete }: 
                       className="flex items-center gap-1 text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full hover:bg-indigo-100 transition-colors disabled:opacity-50"
                     >
                       {isSuggesting ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-                      Magic Suggest ✨
+                      AI Select ✨
                     </button>
                   )}
                 </div>
