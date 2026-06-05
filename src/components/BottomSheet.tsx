@@ -286,7 +286,14 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete }: 
                           {/* 情報 */}
                           <div className="flex-1 min-w-0 py-1 pr-1 flex flex-col justify-between">
                             <div>
-                              <div className="font-bold text-sm text-gray-900 line-clamp-1 group-active:text-indigo-600 transition-colors">{s.name}</div>
+                              <div className="flex items-center gap-1.5">
+                                <div className="font-bold text-sm text-gray-900 line-clamp-1 group-active:text-indigo-600 transition-colors flex-1">{s.name}</div>
+                                {typeof s.distanceKm === 'number' && (
+                                  <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded-full whitespace-nowrap flex-shrink-0">
+                                    {s.distanceKm < 1 ? `${Math.round(s.distanceKm * 1000)}m` : `${s.distanceKm.toFixed(1)}km`}
+                                  </span>
+                                )}
+                              </div>
                               <div className="text-xs text-gray-500 line-clamp-2 leading-relaxed mt-0.5">{s.reason}</div>
                             </div>
                             <div className="flex items-center justify-between mt-1">

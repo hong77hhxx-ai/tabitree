@@ -1,6 +1,16 @@
 import { NextResponse } from 'next/server'
 import { GoogleGenerativeAI } from "@google/generative-ai"
 
+// 2点間の距離をkmで計算（ハバーサイン公式）
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLng = (lng2 - lng1) * Math.PI / 180
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
 export async function POST(req: Request) {
   try {
     const { lat, lng, category } = await req.json()
@@ -16,6 +26,7 @@ export async function POST(req: Request) {
     const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" })
 
     const prompt = `位置情報（緯度: ${lat}, 経度: ${lng}）とカテゴリ（${category || '一般'}）に基づいて、周辺の高評価スポットを3つ日本語で提案してください。
+【重要】提案するスポットは、必ず指定された位置から半径30km以内に実在する場所に限定してください。30kmを超える場所は絶対に含めないでください。緯度・経度は実在する正確な座標を返してください。
 カテゴリは、必ず以下の4つのいずれかから最も適切なものを選択してください：
 - Eat (飲食店、カフェ、レストラン)
 - Stay (ホテル、旅館、宿泊施設)
@@ -45,7 +56,11 @@ export async function POST(req: Request) {
 
     try {
       const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim()
-      const suggestions = JSON.parse(cleanText)
+      const parsed = JSON.parse(cleanText)
+      // 距離(km)を計算して付与し、30km以内のみ返す
+      const suggestions = (Array.isArray(parsed) ? parsed : [])
+        .map((s: any) => ({ ...s, distanceKm: haversineKm(lat, lng, s.lat, s.lng) }))
+        .filter((s: any) => s.distanceKm <= 30)
       return NextResponse.json({ suggestions })
     } catch (parseError) {
       console.error('Failed to parse AI response as JSON:', text)
