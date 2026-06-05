@@ -10,7 +10,7 @@ import CountdownWidget from '@/components/CountdownWidget'
 import NicknameModal from '@/components/NicknameModal'
 import BottomNav from '@/components/BottomNav'
 import HereWidget from '@/components/HereWidget'
-import Profile from '@/components/Profile'
+import Settings, { MapTheme } from '@/components/Settings'
 import AiSearchOverlay from '@/components/AiSearchOverlay'
 
 const MapComponent = dynamic(() => import('@/components/Map'), { ssr: false })
@@ -28,7 +28,8 @@ export default function MapPage() {
   const [tempLocation, setTempLocation] = useState<{lat: number, lng: number} | null>(null)
   const [centerLocation, setCenterLocation] = useState<{lat: number, lng: number} | null>(null)
   const [popupPin, setPopupPin] = useState<Pin | null>(null)
-  const [activeTab, setActiveTab] = useState<'map' | 'timeline' | 'profile'>('map')
+  const [activeTab, setActiveTab] = useState<'map' | 'timeline' | 'settings'>('map')
+  const [mapTheme, setMapTheme] = useState<MapTheme>('default')
   const [searchCircle, setSearchCircle] = useState<{lat: number, lng: number, radiusKm: number} | null>(null)
   const [aiSelect, setAiSelect] = useState<{lat: number, lng: number, category: string} | null>(null)
 
@@ -49,7 +50,15 @@ export default function MapPage() {
     } else {
       setShowNicknameModal(true)
     }
+    // マップ色テーマを復元
+    const savedTheme = localStorage.getItem('tabitree_map_theme') as MapTheme | null
+    if (savedTheme) setMapTheme(savedTheme)
   }, [])
+
+  const handleChangeMapTheme = (theme: MapTheme) => {
+    setMapTheme(theme)
+    localStorage.setItem('tabitree_map_theme', theme)
+  }
 
   // GPS監視
   useEffect(() => {
@@ -291,6 +300,7 @@ export default function MapPage() {
             userLocation={userLocation}
             memberLocations={memberLocations}
             searchCircle={searchCircle}
+            mapTheme={mapTheme}
           />
           <HereWidget pins={pins} onSelectPin={handleShowPopup} />
           {aiSelect && (
@@ -314,15 +324,17 @@ export default function MapPage() {
         />
       </div>
 
-      {/* プロフィール画面 */}
-      <div className={`flex-1 min-h-0 overflow-hidden ${activeTab === 'profile' ? 'flex flex-col' : 'hidden'}`}>
-        <Profile
+      {/* 設定画面 */}
+      <div className={`flex-1 min-h-0 overflow-hidden ${activeTab === 'settings' ? 'flex flex-col' : 'hidden'}`}>
+        <Settings
           nickname={nickname}
           avatarUrl={avatarUrl}
-          onSave={(newName, newAvatar) => {
+          onSaveProfile={(newName, newAvatar) => {
             setNickname(newName)
             setAvatarUrl(newAvatar)
           }}
+          mapTheme={mapTheme}
+          onChangeMapTheme={handleChangeMapTheme}
         />
       </div>
 

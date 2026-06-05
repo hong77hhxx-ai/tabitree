@@ -1,8 +1,8 @@
 'use client'
 
-import { Map, List, User } from 'lucide-react'
+import { Map, List, Settings } from 'lucide-react'
 
-type Tab = 'map' | 'timeline' | 'profile'
+type Tab = 'map' | 'timeline' | 'settings'
 
 type BottomNavProps = {
   activeTab: Tab
@@ -12,7 +12,7 @@ type BottomNavProps = {
 const TABS = [
   { id: 'map' as Tab, label: 'マップ', icon: Map },
   { id: 'timeline' as Tab, label: 'タイムライン', icon: List },
-  { id: 'profile' as Tab, label: 'プロフィール', icon: User },
+  { id: 'settings' as Tab, label: '設定', icon: Settings },
 ]
 
 export default function BottomNav({ activeTab, onChange }: BottomNavProps) {

@@ -25,6 +25,15 @@ type MapComponentProps = {
   userLocation?: { lat: number, lng: number } | null
   memberLocations?: MemberLocation[]
   searchCircle?: { lat: number, lng: number, radiusKm: number } | null
+  mapTheme?: 'default' | 'blue' | 'pink' | 'dark'
+}
+
+// テーマ別のティントオーバーレイ設定
+const THEME_OVERLAY: Record<string, { className: string } | null> = {
+  default: null,
+  blue: { className: 'bg-sky-400/20 mix-blend-multiply' },
+  pink: { className: 'bg-pink-400/20 mix-blend-multiply' },
+  dark: { className: 'bg-slate-900/35 mix-blend-multiply' },
 }
 
 const CATEGORY_LABEL: Record<string, string> = {
@@ -150,7 +159,7 @@ type PinFilter = 'all' | 'plan' | 'memory'
 
 function MapInnerWithMode({
   pins, onAddPin, onOpenSheet, popupPin, onClosePopup,
-  centerLocation, userLocation, memberLocations = [], searchCircle,
+  centerLocation, userLocation, memberLocations = [], searchCircle, mapTheme = 'default',
   addMode, onToggleAddMode,
 }: MapComponentProps & { addMode: boolean, onToggleAddMode: () => void }) {
   const map = useMap()
@@ -221,6 +230,7 @@ function MapInnerWithMode({
         gestureHandling="greedy"
         disableDefaultUI={true}
         clickableIcons={false}
+        colorScheme={mapTheme === 'dark' ? 'DARK' : 'LIGHT'}
         style={{ width: '100%', height: '100%', cursor: addMode ? 'crosshair' : 'grab' }}
         onClick={handleMapClick}
       >
@@ -355,6 +365,11 @@ function MapInnerWithMode({
           )
         })}
       </Map>
+
+      {/* マップ色テーマのティント（水色・ピンク用） */}
+      {THEME_OVERLAY[mapTheme] && (
+        <div className={`absolute inset-0 pointer-events-none z-[5] ${THEME_OVERLAY[mapTheme]!.className}`} />
+      )}
 
       {/* ピン追加モードのヒント */}
       {addMode && (
