@@ -40,7 +40,7 @@ export default function CountdownWidget({ pins, onPinSelect }: CountdownWidgetPr
   return (
     <div
       className="absolute left-4 z-20 flex flex-col items-start"
-      style={{ top: 'max(env(safe-area-inset-top, 0px) + 12px, 16px)' }}
+      style={{ bottom: 'max(env(safe-area-inset-bottom, 0px) + 88px, 88px)' }}
     >
       <AnimatePresence mode="wait">
         {!isExpanded ? (
@@ -63,9 +63,9 @@ export default function CountdownWidget({ pins, onPinSelect }: CountdownWidgetPr
           // 展開時：フルバー
           <motion.div
             key="bar"
-            initial={{ y: -20, opacity: 0 }}
+            initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -20, opacity: 0 }}
+            exit={{ y: 20, opacity: 0 }}
             className="bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-white/60 px-4 py-3 flex items-center gap-3 w-[calc(100vw-2rem)] max-w-sm"
           >
             <button
