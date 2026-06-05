@@ -25,15 +25,7 @@ type MapComponentProps = {
   userLocation?: { lat: number, lng: number } | null
   memberLocations?: MemberLocation[]
   searchCircle?: { lat: number, lng: number, radiusKm: number } | null
-  mapTheme?: 'default' | 'blue' | 'pink' | 'dark'
-}
-
-// テーマ別のティントオーバーレイ設定
-const THEME_OVERLAY: Record<string, { className: string } | null> = {
-  default: null,
-  blue: { className: 'bg-sky-400/20 mix-blend-multiply' },
-  pink: { className: 'bg-pink-400/20 mix-blend-multiply' },
-  dark: { className: 'bg-slate-900/35 mix-blend-multiply' },
+  mapTheme?: 'default' | 'dark'
 }
 
 const CATEGORY_LABEL: Record<string, string> = {
@@ -365,11 +357,6 @@ function MapInnerWithMode({
           )
         })}
       </Map>
-
-      {/* マップ色テーマのティント（水色・ピンク用） */}
-      {THEME_OVERLAY[mapTheme] && (
-        <div className={`absolute inset-0 pointer-events-none z-[5] ${THEME_OVERLAY[mapTheme]!.className}`} />
-      )}
 
       {/* ピン追加モードのヒント */}
       {addMode && (

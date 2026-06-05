@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { User, Map as MapIcon, ChevronRight, ChevronLeft, Check } from 'lucide-react'
 import Profile from './Profile'
 
-export type MapTheme = 'default' | 'blue' | 'pink' | 'dark'
+export type MapTheme = 'default' | 'dark'
 
 type SettingsProps = {
   nickname: string | null
@@ -16,8 +16,6 @@ type SettingsProps = {
 
 const MAP_THEMES: { id: MapTheme, label: string, swatch: string }[] = [
   { id: 'default', label: 'デフォルト', swatch: 'bg-gradient-to-br from-gray-100 to-gray-300' },
-  { id: 'blue', label: '水色', swatch: 'bg-gradient-to-br from-sky-200 to-sky-400' },
-  { id: 'pink', label: 'ピンク', swatch: 'bg-gradient-to-br from-pink-200 to-pink-400' },
   { id: 'dark', label: 'ダーク', swatch: 'bg-gradient-to-br from-gray-700 to-gray-900' },
 ]
 
@@ -52,28 +50,24 @@ export default function Settings({ nickname, avatarUrl, onSaveProfile, mapTheme,
           </button>
           <h1 className="text-base font-bold text-gray-800 ml-2">マップの色</h1>
         </div>
-        <div className="flex-1 overflow-y-auto scroll-touch scrollbar-hide p-4">
-          <div className="grid grid-cols-2 gap-3">
-            {MAP_THEMES.map(t => (
-              <button
-                key={t.id}
-                onClick={() => onChangeMapTheme(t.id)}
-                className={`relative rounded-2xl overflow-hidden border-2 transition-all active:scale-[0.98] ${
-                  mapTheme === t.id ? 'border-[var(--color-primary)] shadow-md' : 'border-transparent'
-                }`}
-              >
-                <div className={`h-28 w-full ${t.swatch}`} />
-                <div className="bg-white px-3 py-2.5 flex items-center justify-between">
-                  <span className="text-sm font-bold text-gray-800">{t.label}</span>
-                  {mapTheme === t.id && (
-                    <div className="w-5 h-5 rounded-full bg-[var(--color-primary)] flex items-center justify-center">
-                      <Check size={13} className="text-white" strokeWidth={3} />
-                    </div>
-                  )}
+        <div className="flex-1 overflow-y-auto scroll-touch scrollbar-hide p-4 space-y-3">
+          {MAP_THEMES.map(t => (
+            <button
+              key={t.id}
+              onClick={() => onChangeMapTheme(t.id)}
+              className={`w-full bg-white rounded-2xl p-3 shadow-sm border-2 flex items-center gap-3 transition-all active:scale-[0.98] ${
+                mapTheme === t.id ? 'border-[var(--color-primary)]' : 'border-gray-100'
+              }`}
+            >
+              <div className={`w-12 h-12 rounded-xl flex-shrink-0 border border-gray-200 ${t.swatch}`} />
+              <span className="flex-1 text-left text-sm font-bold text-gray-800">{t.label}</span>
+              {mapTheme === t.id && (
+                <div className="w-6 h-6 rounded-full bg-[var(--color-primary)] flex items-center justify-center flex-shrink-0">
+                  <Check size={14} className="text-white" strokeWidth={3} />
                 </div>
-              </button>
-            ))}
-          </div>
+              )}
+            </button>
+          ))}
         </div>
       </div>
     )
