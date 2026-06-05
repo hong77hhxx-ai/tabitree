@@ -254,44 +254,49 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete }: 
                       </div>
                       <label className="block text-sm font-bold text-gray-800">AIのおすすめスポット</label>
                     </div>
-                    <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-2 px-2">
+                    <div className="space-y-3">
                       {suggestions.map((s, idx) => (
-                        <div 
-                          key={idx} 
+                        <div
+                          key={idx}
                           onClick={() => handleApplySuggestion(s)}
-                          className="min-w-[280px] flex-shrink-0 bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all active:scale-[0.98] cursor-pointer group"
+                          className="flex gap-3 bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm active:scale-[0.98] transition-all cursor-pointer group p-2"
                         >
-                          <div className="relative h-32 w-full bg-gray-100">
-                            <img 
-                              src={`https://loremflickr.com/400/300/${encodeURIComponent(s.imageSearchTerm || s.name)}?random=${idx}`} 
+                          {/* サムネイル写真 */}
+                          <div className="relative w-24 h-24 flex-shrink-0 rounded-xl overflow-hidden bg-gray-100">
+                            <img
+                              src={`https://loremflickr.com/400/300/${encodeURIComponent(s.imageSearchTerm || s.name)}?random=${idx}`}
                               alt={s.name}
-                              className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                              className="w-full h-full object-cover"
                               onError={(e) => {
-                                // フォールバック: カテゴリに基づいた一般的な写真
                                 (e.target as HTMLImageElement).src = `https://loremflickr.com/400/300/${s.category.toLowerCase()},travel?random=${idx}`;
                               }}
                             />
-                            <div className="absolute top-2 right-2">
-                              <div className={`text-[10px] font-bold text-white px-2 py-1 rounded-full border border-white/20 shadow-lg backdrop-blur-md ${
-                                s.category === 'Eat' ? 'bg-rose-500/80' :
-                                s.category === 'Stay' ? 'bg-emerald-500/80' :
-                                s.category === 'Sightseeing' ? 'bg-sky-500/80' :
-                                s.category === 'Onsen' ? 'bg-amber-500/80' : 'bg-gray-500/80'
+                            <div className="absolute bottom-1 left-1">
+                              <div className={`text-[9px] font-bold text-white px-1.5 py-0.5 rounded-full shadow ${
+                                s.category === 'Eat' ? 'bg-rose-500/90' :
+                                s.category === 'Stay' ? 'bg-emerald-500/90' :
+                                s.category === 'Sightseeing' ? 'bg-sky-500/90' :
+                                s.category === 'Onsen' ? 'bg-amber-500/90' : 'bg-gray-500/90'
                               }`}>
                                 {CATEGORIES.find(c => c.id === s.category)?.label || s.category}
                               </div>
                             </div>
                           </div>
-                          <div className="p-4">
-                            <div className="font-bold text-base text-gray-900 mb-1 line-clamp-1 group-hover:text-indigo-600 transition-colors">{s.name}</div>
-                            <div className="text-xs text-gray-500 line-clamp-2 leading-relaxed mb-3">{s.reason}</div>
-                            <div className="flex items-center justify-between">
+
+                          {/* 情報 */}
+                          <div className="flex-1 min-w-0 py-1 pr-1 flex flex-col justify-between">
+                            <div>
+                              <div className="font-bold text-sm text-gray-900 line-clamp-1 group-active:text-indigo-600 transition-colors">{s.name}</div>
+                              <div className="text-xs text-gray-500 line-clamp-2 leading-relaxed mt-0.5">{s.reason}</div>
+                            </div>
+                            <div className="flex items-center justify-between mt-1">
                               <div className="text-[10px] text-indigo-600 font-bold flex items-center gap-1">
-                                <Sparkles size={12} className="animate-pulse" />
-                                AIが選んだスポット
+                                <Sparkles size={11} className="animate-pulse" />
+                                AIのおすすめ
                               </div>
-                              <div className="w-8 h-8 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
-                                <Save size={14} />
+                              <div className="flex items-center gap-1 text-[10px] font-bold text-white bg-indigo-500 px-2 py-1 rounded-full shadow-sm">
+                                <Save size={11} />
+                                追加して移動
                               </div>
                             </div>
                           </div>

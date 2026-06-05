@@ -202,10 +202,12 @@ export default function MapPage() {
       }).eq('id', pinData.id)
       if (error) console.error(error)
     } else {
+      const newLat = pinData.lat ?? tempLocation?.lat
+      const newLng = pinData.lng ?? tempLocation?.lng
       const { error } = await supabase.from('pins').insert([{
         group_id: groupId,
-        lat: pinData.lat ?? tempLocation?.lat,
-        lng: pinData.lng ?? tempLocation?.lng,
+        lat: newLat,
+        lng: newLng,
         title: pinData.title,
         category: pinData.category,
         status: pinData.status,
@@ -215,6 +217,10 @@ export default function MapPage() {
         scheduled_at: pinData.scheduled_at,
       }])
       if (error) console.error(error)
+      // 新規ピンの位置へマップを移動
+      if (newLat != null && newLng != null) {
+        setCenterLocation({ lat: newLat, lng: newLng })
+      }
     }
     setIsBottomSheetOpen(false)
     setSelectedPin(null)
