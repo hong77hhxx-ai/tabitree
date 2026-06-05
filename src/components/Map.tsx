@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   APIProvider,
   Map,
   AdvancedMarker,
   useMap,
+  useMapsLibrary,
 } from '@vis.gl/react-google-maps'
 import { Pin, MemberLocation } from '@/lib/supabase'
 import { MapPin, Utensils, Bed, Camera, Droplets, Crosshair, ChevronRight, X, Users } from 'lucide-react'
@@ -23,6 +24,7 @@ type MapComponentProps = {
   centerLocation?: { lat: number, lng: number } | null
   userLocation?: { lat: number, lng: number } | null
   memberLocations?: MemberLocation[]
+  searchCircle?: { lat: number, lng: number, radiusKm: number } | null
 }
 
 const CATEGORY_LABEL: Record<string, string> = {
@@ -73,6 +75,43 @@ const getCategoryColor = (category: string) => {
   }
 }
 
+// 検索範囲の半透明の円
+function SearchCircle({ center, radiusKm }: { center: { lat: number, lng: number }, radiusKm: number }) {
+  const map = useMap()
+  const mapsLib = useMapsLibrary('maps')
+  const circleRef = useRef<google.maps.Circle | null>(null)
+
+  useEffect(() => {
+    if (!map || !mapsLib) return
+    if (!circleRef.current) {
+      circleRef.current = new mapsLib.Circle({
+        map,
+        center,
+        radius: radiusKm * 1000,
+        fillColor: '#88D8C0',
+        fillOpacity: 0.18,
+        strokeColor: '#3bbf9c',
+        strokeOpacity: 0.9,
+        strokeWeight: 2,
+        clickable: false,
+      })
+    } else {
+      circleRef.current.setCenter(center)
+      circleRef.current.setRadius(radiusKm * 1000)
+    }
+    // 円全体が見えるようにズーム調整
+    const bounds = circleRef.current.getBounds()
+    if (bounds) map.fitBounds(bounds, 40)
+
+    return () => {
+      circleRef.current?.setMap(null)
+      circleRef.current = null
+    }
+  }, [map, mapsLib, center.lat, center.lng, radiusKm])
+
+  return null
+}
+
 // 地図の中心移動を制御する内部コンポーネント
 function MapController({ centerLocation }: { centerLocation?: { lat: number, lng: number } | null }) {
   const map = useMap()
@@ -111,7 +150,7 @@ type PinFilter = 'all' | 'plan' | 'memory'
 
 function MapInnerWithMode({
   pins, onAddPin, onOpenSheet, popupPin, onClosePopup,
-  centerLocation, userLocation, memberLocations = [],
+  centerLocation, userLocation, memberLocations = [], searchCircle,
   addMode, onToggleAddMode,
 }: MapComponentProps & { addMode: boolean, onToggleAddMode: () => void }) {
   const map = useMap()
@@ -186,6 +225,12 @@ function MapInnerWithMode({
         onClick={handleMapClick}
       >
         <MapController centerLocation={centerLocation} />
+        {searchCircle && (
+          <SearchCircle
+            center={{ lat: searchCircle.lat, lng: searchCircle.lng }}
+            radiusKm={searchCircle.radiusKm}
+          />
+        )}
 
         {visiblePins.map(pin => (
           <AdvancedMarker

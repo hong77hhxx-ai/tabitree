@@ -28,6 +28,7 @@ export default function MapPage() {
   const [centerLocation, setCenterLocation] = useState<{lat: number, lng: number} | null>(null)
   const [popupPin, setPopupPin] = useState<Pin | null>(null)
   const [activeTab, setActiveTab] = useState<'map' | 'timeline' | 'profile'>('map')
+  const [searchCircle, setSearchCircle] = useState<{lat: number, lng: number, radiusKm: number} | null>(null)
 
   const [nickname, setNickname] = useState<string | null>(null)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
@@ -225,6 +226,7 @@ export default function MapPage() {
     setIsBottomSheetOpen(false)
     setSelectedPin(null)
     setTempLocation(null)
+    setSearchCircle(null)
   }
 
   const handleDeletePin = async (pinId: string) => {
@@ -260,6 +262,7 @@ export default function MapPage() {
             centerLocation={centerLocation}
             userLocation={userLocation}
             memberLocations={memberLocations}
+            searchCircle={searchCircle}
           />
           <HereWidget pins={pins} onSelectPin={handleShowPopup} />
         </div>
@@ -294,10 +297,12 @@ export default function MapPage() {
           setIsBottomSheetOpen(false)
           setSelectedPin(null)
           setTempLocation(null)
+          setSearchCircle(null)
         }}
         pin={selectedPin}
         onSave={handleSavePin}
         onDelete={handleDeletePin}
+        onSearchRadiusChange={setSearchCircle}
       />
     </div>
   )

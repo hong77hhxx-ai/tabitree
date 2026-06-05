@@ -12,7 +12,10 @@ type BottomSheetProps = {
   pin: Partial<Pin> | null
   onSave: (pin: Partial<Pin>) => void
   onDelete: (pinId: string) => void
+  onSearchRadiusChange?: (circle: { lat: number, lng: number, radiusKm: number } | null) => void
 }
+
+const SEARCH_RADII = [1, 5, 10, 30]
 
 const CATEGORIES = [
   { id: 'Here', icon: <Users size={18} />, label: '今ここにいるよ', bgClass: 'bg-violet-100', textClass: 'text-violet-800', ringClass: 'ring-violet-300' },
@@ -30,12 +33,14 @@ const HERE_DURATIONS = [
 
 const STATUSES = ['Planned', 'Confirmed', 'Visited']
 
-export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete }: BottomSheetProps) {
+export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete, onSearchRadiusChange }: BottomSheetProps) {
   const [formData, setFormData] = useState<Partial<Pin>>({})
   const [selectedDuration, setSelectedDuration] = useState<string | null>(null)
   const [suggestions, setSuggestions] = useState<any[]>([])
   const [isSuggesting, setIsSuggesting] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
+  const [showRadiusPicker, setShowRadiusPicker] = useState(false)
+  const [searchedRadius, setSearchedRadius] = useState<number | null>(null)
 
 
   // 絵文字の定義
@@ -65,6 +70,8 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete }: 
       })
       setSuggestions([])
       setSelectedDuration(null)
+      setShowRadiusPicker(false)
+      setSearchedRadius(null)
     }
   }, [pin])
 
@@ -136,9 +143,21 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete }: 
     }
   }
 
-  const handleSuggest = async () => {
+  // AIセレクトボタン → 半径選択を表示
+  const handleStartSuggest = () => {
+    setSuggestions([])
+    setSearchedRadius(null)
+    setShowRadiusPicker(true)
+  }
+
+  // 半径を選んで検索実行
+  const handleSearchWithRadius = async (radiusKm: number) => {
     if (!pin?.lat || !pin?.lng) return
-    
+    setShowRadiusPicker(false)
+    setSearchedRadius(radiusKm)
+    // マップに検索範囲の円を表示
+    onSearchRadiusChange?.({ lat: pin.lat, lng: pin.lng, radiusKm })
+
     setIsSuggesting(true)
     try {
       const res = await fetch('/api/suggest', {
@@ -147,7 +166,8 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete }: 
         body: JSON.stringify({
           lat: pin.lat,
           lng: pin.lng,
-          category: formData.category
+          category: formData.category,
+          radiusKm,
         })
       })
       const data = await res.json()
@@ -163,6 +183,11 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete }: 
       setIsSuggesting(false)
     }
   }
+
+  // 次の半径段階を取得（範囲拡大用）
+  const nextRadius = searchedRadius
+    ? SEARCH_RADII.find(r => r > searchedRadius) ?? null
+    : null
 
   const handleApplySuggestion = (suggestion: any) => {
     onSave({
@@ -218,9 +243,9 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete }: 
               <div>
                 <div className="flex justify-between items-center mb-2">
                   <label className="block text-sm font-semibold text-gray-600">カテゴリ</label>
-                  {!pin?.id && (
-                    <button 
-                      onClick={handleSuggest}
+                  {!pin?.id && formData.category !== 'Here' && (
+                    <button
+                      onClick={handleStartSuggest}
                       disabled={isSuggesting}
                       className="flex items-center gap-1 text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full hover:bg-indigo-100 transition-colors disabled:opacity-50"
                     >
@@ -246,13 +271,42 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete }: 
                   ))}
                 </div>
 
-                {suggestions.length > 0 && (
+                {/* 半径選択 */}
+                {showRadiusPicker && (
+                  <div className="mt-4 bg-indigo-50 border border-indigo-100 rounded-2xl p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Sparkles size={16} className="text-indigo-600" />
+                      <label className="block text-sm font-bold text-indigo-700">検索範囲を選んでください</label>
+                    </div>
+                    <div className="grid grid-cols-4 gap-2">
+                      {SEARCH_RADII.map(r => (
+                        <button
+                          key={r}
+                          onClick={() => handleSearchWithRadius(r)}
+                          className="py-3 text-sm font-bold rounded-xl bg-white text-indigo-600 border border-indigo-200 active:bg-indigo-600 active:text-white transition-all"
+                        >
+                          {r}km
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 検索中 */}
+                {isSuggesting && (
+                  <div className="mt-4 flex flex-col items-center justify-center py-8 text-indigo-500">
+                    <Loader2 size={28} className="animate-spin mb-2" />
+                    <span className="text-sm font-bold">半径{searchedRadius}km以内を検索中...</span>
+                  </div>
+                )}
+
+                {!isSuggesting && suggestions.length > 0 && (
                   <div className="mt-6">
                     <div className="flex items-center gap-2 mb-3">
                       <div className="bg-indigo-100 p-1.5 rounded-lg">
                         <Sparkles size={16} className="text-indigo-600" />
                       </div>
-                      <label className="block text-sm font-bold text-gray-800">AIのおすすめスポット</label>
+                      <label className="block text-sm font-bold text-gray-800">AIのおすすめスポット（半径{searchedRadius}km）</label>
                     </div>
                     <div className="space-y-3">
                       {suggestions.map((s, idx) => (
@@ -310,6 +364,42 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete }: 
                         </div>
                       ))}
                     </div>
+
+                    {/* 3件未満：範囲拡大ボタン */}
+                    {suggestions.length < 3 && (
+                      <div className="mt-3 text-center">
+                        <p className="text-xs text-gray-400 mb-2">
+                          この範囲では{suggestions.length}件見つかりました
+                        </p>
+                        {nextRadius ? (
+                          <button
+                            onClick={() => handleSearchWithRadius(nextRadius)}
+                            className="inline-flex items-center gap-1.5 text-sm font-bold text-indigo-600 bg-indigo-50 px-4 py-2.5 rounded-xl active:bg-indigo-100 transition-all"
+                          >
+                            <Sparkles size={14} />
+                            半径{nextRadius}kmに広げて再検索
+                          </button>
+                        ) : (
+                          <p className="text-xs text-gray-400">これ以上範囲を広げられません</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* 検索結果0件 */}
+                {!isSuggesting && searchedRadius !== null && suggestions.length === 0 && (
+                  <div className="mt-4 bg-gray-50 border border-gray-100 rounded-2xl p-4 text-center">
+                    <p className="text-sm text-gray-500 mb-3">半径{searchedRadius}km以内に見つかりませんでした</p>
+                    {nextRadius && (
+                      <button
+                        onClick={() => handleSearchWithRadius(nextRadius)}
+                        className="inline-flex items-center gap-1.5 text-sm font-bold text-indigo-600 bg-indigo-50 px-4 py-2.5 rounded-xl active:bg-indigo-100 transition-all"
+                      >
+                        <Sparkles size={14} />
+                        半径{nextRadius}kmに広げて再検索
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
