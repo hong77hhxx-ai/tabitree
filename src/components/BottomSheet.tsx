@@ -217,7 +217,7 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete, on
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-xl z-50 p-6 flex flex-col gap-4 max-h-[85vh] overflow-y-auto"
+            className="absolute bottom-0 left-0 right-0 mx-auto w-full max-w-lg bg-white rounded-t-3xl shadow-xl z-50 p-6 flex flex-col gap-4 max-h-[85vh] overflow-y-auto overflow-x-hidden overscroll-contain"
           >
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
@@ -258,14 +258,14 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete, on
                     </button>
                   )}
                 </div>
-                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                <div className="flex flex-wrap gap-2 pb-2">
                   {CATEGORIES.map(cat => (
                     <button
                       key={cat.id}
                       onClick={() => handleChange('category', cat.id)}
                       className={`flex items-center gap-1.5 px-4 py-2 rounded-full whitespace-nowrap transition-all ${
-                        formData.category === cat.id 
-                          ? `${cat.bgClass} ${cat.textClass} font-bold ring-2 ring-offset-1 ${cat.ringClass}` 
+                        formData.category === cat.id
+                          ? `${cat.bgClass} ${cat.textClass} font-bold ring-2 ring-offset-1 ${cat.ringClass}`
                           : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                       }`}
                     >
