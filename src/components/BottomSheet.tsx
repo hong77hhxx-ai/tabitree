@@ -460,9 +460,9 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete }: 
 
               <div>
                 <label className="block text-sm font-semibold text-gray-600 mb-1">予定日時</label>
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                <div className="space-y-2">
+                  <div className="relative">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
                       <Calendar size={16} />
                     </div>
                     <input
@@ -475,11 +475,11 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete }: 
                   {formData.scheduled_at && (
                     <button
                       onClick={handleAddToCalendar}
-                      className="px-4 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-xl hover:bg-indigo-100 transition-all flex items-center gap-1 text-xs font-bold"
+                      className="w-full py-2.5 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-xl hover:bg-indigo-100 transition-all flex items-center justify-center gap-1.5 text-sm font-bold"
                       title="Googleカレンダーに追加"
                     >
-                      <Calendar size={14} />
-                      追加
+                      <Calendar size={16} />
+                      Googleカレンダーに追加
                     </button>
                   )}
                 </div>
