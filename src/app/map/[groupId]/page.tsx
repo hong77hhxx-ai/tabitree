@@ -11,6 +11,7 @@ import NicknameModal from '@/components/NicknameModal'
 import BottomNav from '@/components/BottomNav'
 import HereWidget from '@/components/HereWidget'
 import Profile from '@/components/Profile'
+import AiSearchOverlay from '@/components/AiSearchOverlay'
 
 const MapComponent = dynamic(() => import('@/components/Map'), { ssr: false })
 
@@ -29,6 +30,7 @@ export default function MapPage() {
   const [popupPin, setPopupPin] = useState<Pin | null>(null)
   const [activeTab, setActiveTab] = useState<'map' | 'timeline' | 'profile'>('map')
   const [searchCircle, setSearchCircle] = useState<{lat: number, lng: number, radiusKm: number} | null>(null)
+  const [aiSelect, setAiSelect] = useState<{lat: number, lng: number, category: string} | null>(null)
 
   const [nickname, setNickname] = useState<string | null>(null)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
@@ -190,6 +192,32 @@ export default function MapPage() {
     setPopupPin(null)
   }
 
+  // AIセレクト開始：シートを閉じてマップ上にオーバーレイ表示
+  const handleStartAiSelect = (lat: number, lng: number, category: string) => {
+    setIsBottomSheetOpen(false)
+    setAiSelect({ lat, lng, category })
+  }
+
+  // AIオーバーレイを閉じる（キャンセル）→ シートに戻る
+  const handleCloseAiSelect = () => {
+    setAiSelect(null)
+    setSearchCircle(null)
+    setIsBottomSheetOpen(true)
+  }
+
+  // AI提案を採用 → ピン作成
+  const handleApplyAiSuggestion = (s: any) => {
+    setAiSelect(null)
+    handleSavePin({
+      title: s.name,
+      category: s.category,
+      notes: s.reason,
+      status: 'Planned',
+      lat: s.lat,
+      lng: s.lng,
+    })
+  }
+
   const handleSavePin = async (pinData: Partial<Pin>) => {
     if (pinData.id) {
       const { error } = await supabase.from('pins').update({
@@ -265,6 +293,15 @@ export default function MapPage() {
             searchCircle={searchCircle}
           />
           <HereWidget pins={pins} onSelectPin={handleShowPopup} />
+          {aiSelect && (
+            <AiSearchOverlay
+              center={{ lat: aiSelect.lat, lng: aiSelect.lng }}
+              category={aiSelect.category}
+              onRadiusChange={(radiusKm) => setSearchCircle({ lat: aiSelect.lat, lng: aiSelect.lng, radiusKm })}
+              onApply={handleApplyAiSuggestion}
+              onClose={handleCloseAiSelect}
+            />
+          )}
         </div>
       </div>
 
@@ -303,6 +340,7 @@ export default function MapPage() {
         onSave={handleSavePin}
         onDelete={handleDeletePin}
         onSearchRadiusChange={setSearchCircle}
+        onStartAiSelect={handleStartAiSelect}
       />
     </div>
   )

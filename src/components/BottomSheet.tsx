@@ -13,6 +13,7 @@ type BottomSheetProps = {
   onSave: (pin: Partial<Pin>) => void
   onDelete: (pinId: string) => void
   onSearchRadiusChange?: (circle: { lat: number, lng: number, radiusKm: number } | null) => void
+  onStartAiSelect?: (lat: number, lng: number, category: string) => void
 }
 
 const SEARCH_RADII = [1, 5, 10, 30]
@@ -33,7 +34,7 @@ const HERE_DURATIONS = [
 
 const STATUSES = ['Planned', 'Confirmed', 'Visited']
 
-export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete, onSearchRadiusChange }: BottomSheetProps) {
+export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete, onSearchRadiusChange, onStartAiSelect }: BottomSheetProps) {
   const [formData, setFormData] = useState<Partial<Pin>>({})
   const [selectedDuration, setSelectedDuration] = useState<string | null>(null)
   const [suggestions, setSuggestions] = useState<any[]>([])
@@ -245,11 +246,14 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete, on
                   <label className="block text-sm font-semibold text-gray-600">カテゴリ</label>
                   {!pin?.id && formData.category !== 'Here' && (
                     <button
-                      onClick={handleStartSuggest}
-                      disabled={isSuggesting}
+                      onClick={() => {
+                        if (pin?.lat != null && pin?.lng != null) {
+                          onStartAiSelect?.(pin.lat, pin.lng, formData.category || 'Eat')
+                        }
+                      }}
                       className="flex items-center gap-1 text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full hover:bg-indigo-100 transition-colors disabled:opacity-50"
                     >
-                      {isSuggesting ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                      <Sparkles size={14} />
                       AI Select ✨
                     </button>
                   )}
@@ -271,137 +275,6 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete, on
                   ))}
                 </div>
 
-                {/* 半径選択 */}
-                {showRadiusPicker && (
-                  <div className="mt-4 bg-indigo-50 border border-indigo-100 rounded-2xl p-4 space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Sparkles size={16} className="text-indigo-600" />
-                      <label className="block text-sm font-bold text-indigo-700">検索範囲を選んでください</label>
-                    </div>
-                    <div className="grid grid-cols-4 gap-2">
-                      {SEARCH_RADII.map(r => (
-                        <button
-                          key={r}
-                          onClick={() => handleSearchWithRadius(r)}
-                          className="py-3 text-sm font-bold rounded-xl bg-white text-indigo-600 border border-indigo-200 active:bg-indigo-600 active:text-white transition-all"
-                        >
-                          {r}km
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* 検索中 */}
-                {isSuggesting && (
-                  <div className="mt-4 flex flex-col items-center justify-center py-8 text-indigo-500">
-                    <Loader2 size={28} className="animate-spin mb-2" />
-                    <span className="text-sm font-bold">半径{searchedRadius}km以内を検索中...</span>
-                  </div>
-                )}
-
-                {!isSuggesting && suggestions.length > 0 && (
-                  <div className="mt-6">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="bg-indigo-100 p-1.5 rounded-lg">
-                        <Sparkles size={16} className="text-indigo-600" />
-                      </div>
-                      <label className="block text-sm font-bold text-gray-800">AIのおすすめスポット（半径{searchedRadius}km）</label>
-                    </div>
-                    <div className="space-y-3">
-                      {suggestions.map((s, idx) => (
-                        <div
-                          key={idx}
-                          onClick={() => handleApplySuggestion(s)}
-                          className="flex gap-3 bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm active:scale-[0.98] transition-all cursor-pointer group p-2"
-                        >
-                          {/* サムネイル写真 */}
-                          <div className="relative w-24 h-24 flex-shrink-0 rounded-xl overflow-hidden bg-gray-100">
-                            <img
-                              src={`https://loremflickr.com/400/300/${encodeURIComponent(s.imageSearchTerm || s.name)}?random=${idx}`}
-                              alt={s.name}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = `https://loremflickr.com/400/300/${s.category.toLowerCase()},travel?random=${idx}`;
-                              }}
-                            />
-                            <div className="absolute bottom-1 left-1">
-                              <div className={`text-[9px] font-bold text-white px-1.5 py-0.5 rounded-full shadow ${
-                                s.category === 'Eat' ? 'bg-rose-500/90' :
-                                s.category === 'Stay' ? 'bg-emerald-500/90' :
-                                s.category === 'Sightseeing' ? 'bg-sky-500/90' :
-                                s.category === 'Onsen' ? 'bg-amber-500/90' : 'bg-gray-500/90'
-                              }`}>
-                                {CATEGORIES.find(c => c.id === s.category)?.label || s.category}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* 情報 */}
-                          <div className="flex-1 min-w-0 py-1 pr-1 flex flex-col justify-between">
-                            <div>
-                              <div className="flex items-center gap-1.5">
-                                <div className="font-bold text-sm text-gray-900 line-clamp-1 group-active:text-indigo-600 transition-colors flex-1">{s.name}</div>
-                                {typeof s.distanceKm === 'number' && (
-                                  <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded-full whitespace-nowrap flex-shrink-0">
-                                    {s.distanceKm < 1 ? `${Math.round(s.distanceKm * 1000)}m` : `${s.distanceKm.toFixed(1)}km`}
-                                  </span>
-                                )}
-                              </div>
-                              <div className="text-xs text-gray-500 line-clamp-2 leading-relaxed mt-0.5">{s.reason}</div>
-                            </div>
-                            <div className="flex items-center justify-between mt-1">
-                              <div className="text-[10px] text-indigo-600 font-bold flex items-center gap-1">
-                                <Sparkles size={11} className="animate-pulse" />
-                                AIのおすすめ
-                              </div>
-                              <div className="flex items-center gap-1 text-[10px] font-bold text-white bg-indigo-500 px-2 py-1 rounded-full shadow-sm">
-                                <Save size={11} />
-                                追加して移動
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* 3件未満：範囲拡大ボタン */}
-                    {suggestions.length < 3 && (
-                      <div className="mt-3 text-center">
-                        <p className="text-xs text-gray-400 mb-2">
-                          この範囲では{suggestions.length}件見つかりました
-                        </p>
-                        {nextRadius ? (
-                          <button
-                            onClick={() => handleSearchWithRadius(nextRadius)}
-                            className="inline-flex items-center gap-1.5 text-sm font-bold text-indigo-600 bg-indigo-50 px-4 py-2.5 rounded-xl active:bg-indigo-100 transition-all"
-                          >
-                            <Sparkles size={14} />
-                            半径{nextRadius}kmに広げて再検索
-                          </button>
-                        ) : (
-                          <p className="text-xs text-gray-400">これ以上範囲を広げられません</p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* 検索結果0件 */}
-                {!isSuggesting && searchedRadius !== null && suggestions.length === 0 && (
-                  <div className="mt-4 bg-gray-50 border border-gray-100 rounded-2xl p-4 text-center">
-                    <p className="text-sm text-gray-500 mb-3">半径{searchedRadius}km以内に見つかりませんでした</p>
-                    {nextRadius && (
-                      <button
-                        onClick={() => handleSearchWithRadius(nextRadius)}
-                        className="inline-flex items-center gap-1.5 text-sm font-bold text-indigo-600 bg-indigo-50 px-4 py-2.5 rounded-xl active:bg-indigo-100 transition-all"
-                      >
-                        <Sparkles size={14} />
-                        半径{nextRadius}kmに広げて再検索
-                      </button>
-                    )}
-                  </div>
-                )}
               </div>
 
               <div>
