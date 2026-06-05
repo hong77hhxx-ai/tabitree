@@ -4,7 +4,8 @@ import { GoogleGenerativeAI } from "@google/generative-ai"
 export async function POST(req: Request) {
   try {
     const { lat, lng, category } = await req.json()
-    const apiKey = process.env.GEMINI_API_KEY
+    // BOM・非ASCII文字を除去（環境変数のエンコード問題対策）
+    const apiKey = process.env.GEMINI_API_KEY?.replace(/[^\x20-\x7E]/g, '').trim()
 
     if (!apiKey) {
       return NextResponse.json({ error: 'GEMINI_API_KEY is not configured.' }, { status: 500 })
