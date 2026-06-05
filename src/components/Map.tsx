@@ -9,7 +9,7 @@ import {
   useMapsLibrary,
 } from '@vis.gl/react-google-maps'
 import { Pin, MemberLocation } from '@/lib/supabase'
-import { MapPin, Utensils, Bed, Camera, Droplets, Crosshair, ChevronRight, X, Users } from 'lucide-react'
+import { MapPin, Utensils, Bed, Camera, Droplets, Crosshair, ChevronRight, X, Users, ListFilter, ChevronDown } from 'lucide-react'
 
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''
 // AdvancedMarkerにはMap IDが必須。デモ用のDEMO_MAP_IDを利用
@@ -156,6 +156,7 @@ function MapInnerWithMode({
 }: MapComponentProps & { addMode: boolean, onToggleAddMode: () => void }) {
   const map = useMap()
   const [filter, setFilter] = useState<PinFilter>('all')
+  const [filterOpen, setFilterOpen] = useState(false)
 
   const handleMyLocation = () => {
     if (userLocation && map) {
@@ -195,24 +196,39 @@ function MapInnerWithMode({
 
   return (
     <div className="w-full h-full relative">
-      {/* ピンフィルター */}
+      {/* ピンフィルター（右上ドロップダウン） */}
       <div
-        className="absolute left-1/2 -translate-x-1/2 z-10 bg-white/95 backdrop-blur-md rounded-full shadow-lg border border-gray-100 p-1 flex gap-1 w-max"
-        style={{ bottom: 'max(env(safe-area-inset-bottom, 0px) + 24px, 24px)' }}
+        className="absolute right-4 z-10 flex flex-col items-end"
+        style={{ top: 'max(env(safe-area-inset-top, 0px) + 12px, 16px)' }}
       >
-        {FILTERS.map(f => (
-          <button
-            key={f.id}
-            onClick={() => setFilter(f.id)}
-            className={`px-4 py-2 text-sm font-bold rounded-full transition-all whitespace-nowrap ${
-              filter === f.id
-                ? 'bg-[var(--color-primary)] text-white shadow-sm'
-                : 'text-gray-500 active:bg-gray-100'
-            }`}
-          >
-            {f.label}
-          </button>
-        ))}
+        <button
+          onClick={() => setFilterOpen(v => !v)}
+          className="bg-white/95 backdrop-blur-md rounded-full shadow-lg border border-gray-100 pl-3 pr-2.5 py-2 flex items-center gap-1.5 active:scale-95 transition-all"
+        >
+          <ListFilter size={15} className="text-[var(--color-primary)]" />
+          <span className="text-sm font-bold text-gray-700 whitespace-nowrap">
+            {FILTERS.find(f => f.id === filter)?.label}
+          </span>
+          <ChevronDown size={15} className={`text-gray-400 transition-transform ${filterOpen ? 'rotate-180' : ''}`} />
+        </button>
+
+        {filterOpen && (
+          <div className="mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden w-36">
+            {FILTERS.map(f => (
+              <button
+                key={f.id}
+                onClick={() => { setFilter(f.id); setFilterOpen(false) }}
+                className={`w-full text-left px-4 py-3 text-sm font-bold transition-colors ${
+                  filter === f.id
+                    ? 'bg-[var(--color-primary)]/10 text-teal-700'
+                    : 'text-gray-600 active:bg-gray-50'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <Map
