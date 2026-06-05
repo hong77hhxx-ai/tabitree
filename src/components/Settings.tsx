@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { User, Map as MapIcon, ChevronRight, ChevronLeft, Check } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { User, Map as MapIcon, ChevronRight, ChevronLeft, Check, Home } from 'lucide-react'
 import Profile from './Profile'
 
 export type MapTheme = 'default' | 'dark'
@@ -21,6 +22,7 @@ const MAP_THEMES: { id: MapTheme, label: string, swatch: string }[] = [
 
 export default function Settings({ nickname, avatarUrl, onSaveProfile, mapTheme, onChangeMapTheme }: SettingsProps) {
   const [view, setView] = useState<'menu' | 'profile' | 'map'>('menu')
+  const router = useRouter()
 
   // プロフィールサブ画面
   if (view === 'profile') {
@@ -106,6 +108,20 @@ export default function Settings({ nickname, avatarUrl, onSaveProfile, mapTheme,
             <div className="text-xs text-gray-400">
               色: {MAP_THEMES.find(t => t.id === mapTheme)?.label}
             </div>
+          </div>
+          <ChevronRight size={20} className="text-gray-300" />
+        </button>
+
+        <button
+          onClick={() => router.push('/')}
+          className="w-full bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3 active:scale-[0.98] transition-all"
+        >
+          <div className="p-2.5 rounded-xl bg-amber-50 text-amber-600 flex-shrink-0">
+            <Home size={20} />
+          </div>
+          <div className="flex-1 text-left">
+            <div className="font-bold text-gray-800">マップ一覧へ戻る</div>
+            <div className="text-xs text-gray-400">他のマップを切り替え</div>
           </div>
           <ChevronRight size={20} className="text-gray-300" />
         </button>

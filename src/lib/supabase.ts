@@ -42,7 +42,39 @@ export const uploadPhoto = async (file: File, pinId: string): Promise<string | n
 export type Group = {
   id: string
   name: string
+  color: string | null
   created_at: string
+}
+
+// マップの色パレット
+export const GROUP_COLORS = [
+  '#88D8C0', '#FFB3BA', '#BAE1FF', '#FFD8A8',
+  '#C3B1E1', '#A8E6CF', '#FFAAA5', '#B5EAD7',
+]
+
+// 参加したマップのID一覧をlocalStorageで管理（認証なし）
+export const getJoinedGroupIds = (): string[] => {
+  if (typeof window === 'undefined') return []
+  try {
+    return JSON.parse(localStorage.getItem('tabitree_joined_groups') || '[]')
+  } catch {
+    return []
+  }
+}
+
+export const addJoinedGroup = (groupId: string) => {
+  if (typeof window === 'undefined') return
+  const ids = getJoinedGroupIds()
+  if (!ids.includes(groupId)) {
+    // 最新を先頭に
+    localStorage.setItem('tabitree_joined_groups', JSON.stringify([groupId, ...ids]))
+  }
+}
+
+export const removeJoinedGroup = (groupId: string) => {
+  if (typeof window === 'undefined') return
+  const ids = getJoinedGroupIds().filter(id => id !== groupId)
+  localStorage.setItem('tabitree_joined_groups', JSON.stringify(ids))
 }
 
 export type MemberLocation = {

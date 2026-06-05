@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
-import { supabase, Pin, MemberLocation, getUserId } from '@/lib/supabase'
+import { supabase, Pin, MemberLocation, getUserId, addJoinedGroup } from '@/lib/supabase'
 import BottomSheet from '@/components/BottomSheet'
 import Timeline from '@/components/Timeline'
 import CountdownWidget from '@/components/CountdownWidget'
@@ -53,6 +53,8 @@ export default function MapPage() {
     // マップ色テーマを復元
     const savedTheme = localStorage.getItem('tabitree_map_theme') as MapTheme | null
     if (savedTheme) setMapTheme(savedTheme)
+    // このマップを参加一覧に追加（共有リンク経由でも記録）
+    if (groupId) addJoinedGroup(groupId)
   }, [])
 
   const handleChangeMapTheme = (theme: MapTheme) => {
