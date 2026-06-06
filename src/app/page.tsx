@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation'
 import {
   supabase, Group, GROUP_COLORS,
   getStoredGroups, addStoredGroup, removeStoredGroup, StoredGroup,
+  uploadGroupPhoto,
 } from '@/lib/supabase'
-import { MapPin, Plus, ArrowRight, ChevronRight, Trash2, X, Compass, Link2 } from 'lucide-react'
+import { MapPin, Plus, ArrowRight, ChevronRight, Trash2, X, Compass, Link2, Camera, ImagePlus, Loader2, Settings } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { formatDistanceToNow } from 'date-fns'
 import { ja } from 'date-fns/locale'
@@ -22,6 +23,8 @@ export default function Home() {
   const [groupName, setGroupName] = useState('')
   const [selectedColor, setSelectedColor] = useState(GROUP_COLORS[0])
   const [isCreating, setIsCreating] = useState(false)
+  const [createPhotoFile, setCreatePhotoFile] = useState<File | null>(null)
+  const [createPhotoPreview, setCreatePhotoPreview] = useState<string | null>(null)
 
   // 参加フォーム
   const [joinInput, setJoinInput] = useState('')
@@ -53,7 +56,18 @@ export default function Home() {
     }
 
     const g = data as Group
-    addStoredGroup({ id: g.id, name: g.name, color: g.color })
+
+    // 写真が選択されていればアップロードしてDB更新
+    let photoUrl: string | null = null
+    if (createPhotoFile) {
+      photoUrl = await uploadGroupPhoto(createPhotoFile, g.id)
+      if (photoUrl) {
+        await supabase.from('groups').update({ photo_url: photoUrl }).eq('id', g.id)
+      }
+    }
+
+    addStoredGroup({ id: g.id, name: g.name, color: g.color, photo_url: photoUrl })
+    closeForm()
     router.push(`/map/${g.id}`)
   }
 
@@ -100,6 +114,18 @@ export default function Home() {
     setGroupName('')
     setJoinInput('')
     setSelectedColor(GROUP_COLORS[0])
+    if (createPhotoPreview) URL.revokeObjectURL(createPhotoPreview)
+    setCreatePhotoFile(null)
+    setCreatePhotoPreview(null)
+  }
+
+  const handleCreatePhotoPick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    if (createPhotoPreview) URL.revokeObjectURL(createPhotoPreview)
+    setCreatePhotoFile(file)
+    setCreatePhotoPreview(URL.createObjectURL(file))
   }
 
   return (
@@ -145,10 +171,14 @@ export default function Home() {
                 <div className="w-2 self-stretch flex-shrink-0" style={{ backgroundColor: g.color || '#88D8C0' }} />
                 <div className="flex items-center gap-3 flex-1 min-w-0 p-4">
                   <div
-                    className="w-11 h-11 rounded-xl flex-shrink-0 flex items-center justify-center"
+                    className="w-11 h-11 rounded-xl flex-shrink-0 flex items-center justify-center relative overflow-hidden"
                     style={{ backgroundColor: g.color || '#88D8C0' }}
                   >
-                    <MapPin size={20} className="text-white" />
+                    {g.photo_url ? (
+                      <img src={g.photo_url} alt={g.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <MapPin size={20} className="text-white" />
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-bold text-[var(--text-strong)] truncate">{g.name}</div>
@@ -156,6 +186,16 @@ export default function Home() {
                       {formatDistanceToNow(new Date(g.joinedAt), { addSuffix: true, locale: ja })}に参加
                     </div>
                   </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      router.push(`/map/${g.id}/details`)
+                    }}
+                    className="p-2 text-gray-300 hover:text-[var(--color-primary)] active:text-[var(--color-primary)] rounded-lg transition-all flex-shrink-0"
+                    aria-label="詳細"
+                  >
+                    <Settings size={16} />
+                  </button>
                   <button
                     onClick={(e) => handleRemove(e, g.id)}
                     className="p-2 text-gray-300 hover:text-rose-500 active:text-rose-500 rounded-lg transition-all flex-shrink-0"
@@ -220,6 +260,27 @@ export default function Home() {
               {/* 新規作成フォーム */}
               {mode === 'create' && (
                 <form onSubmit={handleCreateGroup} className="space-y-5">
+                  {/* 写真 */}
+                  <div className="flex flex-col items-center gap-2">
+                    <label className="relative cursor-pointer group/cp">
+                      <div
+                        className="w-20 h-20 rounded-2xl overflow-hidden flex items-center justify-center border border-black/5"
+                        style={{ backgroundColor: selectedColor }}
+                      >
+                        {createPhotoPreview ? (
+                          <img src={createPhotoPreview} alt="preview" className="w-full h-full object-cover" />
+                        ) : (
+                          <ImagePlus size={26} className="text-white/90" />
+                        )}
+                        <span className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover/cp:opacity-100 active:opacity-100 transition-opacity">
+                          <Camera size={18} className="text-white" />
+                        </span>
+                      </div>
+                      <input type="file" accept="image/*" className="hidden" onChange={handleCreatePhotoPick} />
+                    </label>
+                    <span className="text-xs text-[var(--text-muted)]">写真を追加（任意）</span>
+                  </div>
+
                   <div>
                     <label className="block text-sm font-bold text-[var(--text-strong)] mb-2">マップ名</label>
                     <input

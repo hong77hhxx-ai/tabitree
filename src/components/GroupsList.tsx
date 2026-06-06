@@ -3,11 +3,14 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  supabase, Group, GROUP_COLORS,
+  supabase, Group, MemberLocation, GROUP_COLORS,
   getStoredGroups, addStoredGroup, removeStoredGroup, StoredGroup,
-  uploadGroupPhoto, updateStoredGroupPhoto,
+  uploadGroupPhoto, updateStoredGroupPhoto, updateStoredGroupName,
 } from '@/lib/supabase'
-import { MapPin, Plus, ArrowRight, ChevronRight, Trash2, X, Compass, Link2, Layers, Camera, Loader2 } from 'lucide-react'
+import {
+  MapPin, Plus, ArrowRight, ChevronRight, Trash2, X, Compass, Link2, Layers,
+  Camera, Loader2, ImagePlus, ChevronLeft, Users, Pencil, Check, Settings,
+} from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { formatDistanceToNow } from 'date-fns'
 import { ja } from 'date-fns/locale'
@@ -27,6 +30,8 @@ export default function GroupsList({ currentGroupId }: GroupsListProps) {
   const [groupName, setGroupName] = useState('')
   const [selectedColor, setSelectedColor] = useState(GROUP_COLORS[0])
   const [isCreating, setIsCreating] = useState(false)
+  const [createPhotoFile, setCreatePhotoFile] = useState<File | null>(null)
+  const [createPhotoPreview, setCreatePhotoPreview] = useState<string | null>(null)
 
   // 参加フォーム
   const [joinInput, setJoinInput] = useState('')
@@ -83,7 +88,15 @@ export default function GroupsList({ currentGroupId }: GroupsListProps) {
     }
 
     const g = data as Group
-    addStoredGroup({ id: g.id, name: g.name, color: g.color })
+    // 写真が選ばれていれば作成後にアップロードして反映
+    let photoUrl: string | null = null
+    if (createPhotoFile) {
+      photoUrl = await uploadGroupPhoto(createPhotoFile, g.id)
+      if (photoUrl) {
+        await supabase.from('groups').update({ photo_url: photoUrl }).eq('id', g.id)
+      }
+    }
+    addStoredGroup({ id: g.id, name: g.name, color: g.color, photo_url: photoUrl })
     setGroups(getStoredGroups())
     closeForm()
     router.push(`/map/${g.id}`)
@@ -134,7 +147,21 @@ export default function GroupsList({ currentGroupId }: GroupsListProps) {
     setSelectedColor(GROUP_COLORS[0])
     setIsCreating(false)
     setIsJoining(false)
+    if (createPhotoPreview) URL.revokeObjectURL(createPhotoPreview)
+    setCreatePhotoFile(null)
+    setCreatePhotoPreview(null)
   }
+
+  const handleCreatePhotoPick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    if (createPhotoPreview) URL.revokeObjectURL(createPhotoPreview)
+    setCreatePhotoFile(file)
+    setCreatePhotoPreview(URL.createObjectURL(file))
+  }
+
+
 
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-[var(--surface-muted-2)] overflow-y-auto">
@@ -223,6 +250,16 @@ export default function GroupsList({ currentGroupId }: GroupsListProps) {
                       </div>
                     </div>
                     <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        router.push(`/map/${g.id}/details`)
+                      }}
+                      className="p-2 text-[var(--text-muted)] hover:text-[var(--accent)] active:text-[var(--accent)] rounded-lg transition-all flex-shrink-0"
+                      aria-label="詳細"
+                    >
+                      <Settings size={18} />
+                    </button>
+                    <button
                       onClick={(e) => handleRemove(e, g.id)}
                       className="p-2 text-gray-300 hover:text-rose-500 active:text-rose-500 rounded-lg transition-all flex-shrink-0"
                     >
@@ -288,6 +325,27 @@ export default function GroupsList({ currentGroupId }: GroupsListProps) {
               {/* 新規作成フォーム */}
               {mode === 'create' && (
                 <form onSubmit={handleCreateGroup} className="space-y-5">
+                  {/* 写真 */}
+                  <div className="flex flex-col items-center gap-2">
+                    <label className="relative cursor-pointer group/cp">
+                      <div
+                        className="w-20 h-20 rounded-2xl overflow-hidden flex items-center justify-center border border-black/5"
+                        style={{ backgroundColor: selectedColor }}
+                      >
+                        {createPhotoPreview ? (
+                          <img src={createPhotoPreview} alt="preview" className="w-full h-full object-cover" />
+                        ) : (
+                          <ImagePlus size={26} className="text-white/90" />
+                        )}
+                        <span className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover/cp:opacity-100 active:opacity-100 transition-opacity">
+                          <Camera size={18} className="text-white" />
+                        </span>
+                      </div>
+                      <input type="file" accept="image/*" className="hidden" onChange={handleCreatePhotoPick} />
+                    </label>
+                    <span className="text-xs text-[var(--text-muted)]">写真を追加（任意）</span>
+                  </div>
+
                   <div>
                     <label className="block text-sm font-bold text-[var(--text-strong)] mb-2">マップ名</label>
                     <input

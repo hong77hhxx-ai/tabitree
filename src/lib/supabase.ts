@@ -110,6 +110,13 @@ export const updateStoredGroupPhoto = (id: string, photo_url: string | null) => 
   localStorage.setItem(GROUPS_KEY, JSON.stringify(updated))
 }
 
+// 参加グループの名前をローカルにも反映
+export const updateStoredGroupName = (id: string, name: string) => {
+  if (typeof window === 'undefined') return
+  const updated = getStoredGroups().map(g => g.id === id ? { ...g, name } : g)
+  localStorage.setItem(GROUPS_KEY, JSON.stringify(updated))
+}
+
 export const removeStoredGroup = (id: string) => {
   if (typeof window === 'undefined') return
   const updated = getStoredGroups().filter(g => g.id !== id)
