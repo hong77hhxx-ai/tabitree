@@ -36,22 +36,22 @@ export default function MapFilterPanel({
       {/* ハンバーガーボタン（横棒3本） */}
       <button
         onClick={() => setOpen(v => !v)}
-        className="bg-white/95 backdrop-blur-md rounded-full shadow-lg border border-gray-100 p-2.5 flex items-center justify-center active:scale-95 transition-all"
+        className="bg-[var(--surface)] backdrop-blur-md rounded-full shadow-lg border border-[var(--border-soft)] p-2.5 flex items-center justify-center active:scale-95 transition-all"
         aria-label="フィルター"
       >
-        {open ? <X size={20} className="text-gray-700" /> : <Menu size={20} className="text-gray-700" />}
+        {open ? <X size={20} className="text-[var(--text-strong)]" /> : <Menu size={20} className="text-[var(--text-strong)]" />}
       </button>
 
       {open && (
-        <div className="mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden w-64 max-h-[70vh] overflow-y-auto">
+        <div className="mt-2 bg-[var(--surface)] rounded-2xl shadow-xl border border-[var(--border-soft)] overflow-hidden w-64 max-h-[70vh] overflow-y-auto">
           {/* グループ */}
           <div className="px-4 pt-4 pb-2">
             <div className="flex items-center gap-1.5 mb-2.5">
-              <Layers size={14} className="text-teal-600" />
-              <span className="text-xs font-bold text-gray-400 tracking-wider uppercase">表示するグループ</span>
+              <Layers size={14} style={{ color: 'var(--accent)' }} />
+              <span className="text-xs font-bold text-[var(--text-muted)] tracking-wider uppercase">表示するグループ</span>
             </div>
             {groups.length === 0 ? (
-              <p className="text-xs text-gray-400 py-2">参加中のグループがありません。</p>
+              <p className="text-xs text-[var(--text-muted)] py-2">参加中のグループがありません。</p>
             ) : (
               <div className="space-y-1">
                 {groups.map(g => {
@@ -61,19 +61,22 @@ export default function MapFilterPanel({
                     <button
                       key={g.id}
                       onClick={() => onToggleGroup(g.id)}
-                      className="w-full flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-gray-50 active:bg-gray-100 transition-colors text-left"
+                      className="w-full flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-[var(--surface-sunken)] transition-colors text-left"
                     >
                       <span
                         className="w-3.5 h-3.5 rounded-full flex-shrink-0 border border-black/5"
                         style={{ backgroundColor: g.color || '#88D8C0' }}
                       />
-                      <span className="flex-1 min-w-0 text-sm font-bold text-gray-700 truncate">
+                      <span className="flex-1 min-w-0 text-sm font-bold text-[var(--text-strong)] truncate">
                         {g.name}
-                        {isCurrent && <span className="ml-1 text-[10px] text-teal-600 font-bold">（表示中）</span>}
+                        {isCurrent && <span className="ml-1 text-[10px] font-bold" style={{ color: 'var(--accent)' }}>（表示中）</span>}
                       </span>
-                      <span className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 border transition-all ${
-                        checked ? 'bg-teal-600 border-teal-600' : 'bg-white border-gray-300'
-                      }`}>
+                      <span
+                        className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 border transition-all"
+                        style={checked
+                          ? { backgroundColor: 'var(--color-primary)', borderColor: 'var(--color-primary)' }
+                          : { backgroundColor: 'var(--surface)', borderColor: 'var(--border-soft)' }}
+                      >
                         {checked && <Check size={14} className="text-white" />}
                       </span>
                     </button>
@@ -83,13 +86,13 @@ export default function MapFilterPanel({
             )}
           </div>
 
-          <div className="h-px bg-gray-100 mx-4 my-1" />
+          <div className="h-px bg-[var(--border-soft)] mx-4 my-1" />
 
           {/* カテゴリー */}
           <div className="px-4 pt-2 pb-4">
             <div className="flex items-center gap-1.5 mb-2.5">
-              <Tag size={14} className="text-teal-600" />
-              <span className="text-xs font-bold text-gray-400 tracking-wider uppercase">カテゴリー</span>
+              <Tag size={14} style={{ color: 'var(--accent)' }} />
+              <span className="text-xs font-bold text-[var(--text-muted)] tracking-wider uppercase">カテゴリー</span>
             </div>
             <div className="grid grid-cols-2 gap-2">
               {FILTER_CATEGORIES.map(({ id, label, Icon, color, bg }) => {
@@ -99,11 +102,11 @@ export default function MapFilterPanel({
                     key={id}
                     onClick={() => onToggleCategory(id)}
                     className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-bold transition-all ${
-                      active ? bg : 'bg-gray-50 border-gray-100 opacity-50'
+                      active ? bg : 'bg-[var(--surface-sunken)] border-[var(--border-soft)] opacity-60'
                     }`}
                   >
-                    <Icon size={16} className={active ? color : 'text-gray-400'} />
-                    <span className={active ? 'text-gray-700' : 'text-gray-400'}>{label}</span>
+                    <Icon size={16} className={active ? color : 'text-[var(--text-muted)]'} />
+                    <span className={active ? 'text-gray-700' : 'text-[var(--text-muted)]'}>{label}</span>
                   </button>
                 )
               })}

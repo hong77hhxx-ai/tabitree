@@ -52,12 +52,12 @@ export default function NicknameModal({ onConfirm }: Props) {
         initial={{ y: '100%' }}
         animate={{ y: 0 }}
         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        className="bg-white rounded-t-3xl shadow-2xl w-full max-w-lg px-6 pt-6 pb-8"
+        className="bg-[var(--surface)] rounded-t-3xl shadow-2xl w-full max-w-lg px-6 pt-6 pb-8"
       >
-        <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-6" />
+        <div className="w-10 h-1 bg-[var(--border-soft)] rounded-full mx-auto mb-6" />
 
-        <h2 className="text-xl font-bold text-gray-800 text-center mb-1">プロフィールを設定</h2>
-        <p className="text-sm text-gray-500 text-center mb-6">マップ上でメンバーに表示されます</p>
+        <h2 className="text-xl font-bold text-[var(--text-strong)] text-center mb-1">プロフィールを設定</h2>
+        <p className="text-sm text-[var(--text-muted)] text-center mb-6">マップ上でメンバーに表示されます</p>
 
         {/* アバター */}
         <div className="flex justify-center mb-6">
@@ -93,12 +93,12 @@ export default function NicknameModal({ onConfirm }: Props) {
 
         {/* 撮影ボタン（別途） */}
         <div className="flex justify-center gap-3 -mt-2 mb-2">
-          <label className={`flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-full border cursor-pointer transition-all active:scale-95 ${isUploading ? 'opacity-50 pointer-events-none' : ''} bg-gray-50 border-gray-200 text-gray-600`}>
+          <label className={`flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-full border cursor-pointer transition-all active:scale-95 ${isUploading ? 'opacity-50 pointer-events-none' : ''} bg-[var(--surface-sunken)] border-[var(--border-soft)] text-[var(--text-muted)]`}>
             <Camera size={14} />
             カメラ
             <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleAvatarChange} disabled={isUploading} />
           </label>
-          <label className={`flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-full border cursor-pointer transition-all active:scale-95 ${isUploading ? 'opacity-50 pointer-events-none' : ''} bg-gray-50 border-gray-200 text-gray-600`}>
+          <label className={`flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-full border cursor-pointer transition-all active:scale-95 ${isUploading ? 'opacity-50 pointer-events-none' : ''} bg-[var(--surface-sunken)] border-[var(--border-soft)] text-[var(--text-muted)]`}>
             🖼️ ライブラリ
             <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} disabled={isUploading} />
           </label>
@@ -111,7 +111,7 @@ export default function NicknameModal({ onConfirm }: Props) {
             onChange={e => setValue(e.target.value)}
             placeholder="例: たろう"
             maxLength={20}
-            className="w-full px-4 py-4 rounded-2xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:bg-white transition-all text-gray-800 text-center text-lg font-bold"
+            className="w-full px-4 py-4 rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-sunken)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all text-[var(--text-strong)] text-center text-lg font-bold"
           />
           <button
             type="submit"

@@ -45,17 +45,17 @@ export default function Timeline({ pins, onSelectPin, onDeletePin }: TimelinePro
   }
 
   return (
-    <div className="flex flex-col h-full bg-[#f8fcfb]" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+    <div className="flex flex-col h-full bg-[var(--surface-muted)]" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
       {/* ヘッダー */}
-      <div className="bg-white border-b border-gray-100 px-4 pt-5 pb-0 flex-shrink-0">
-        <h1 className="text-xl font-bold text-gray-800 mb-3">タイムライン</h1>
+      <div className="bg-[var(--surface)] border-b border-[var(--border-soft)] px-4 pt-5 pb-0 flex-shrink-0">
+        <h1 className="text-xl font-bold text-[var(--text-strong)] mb-3">タイムライン</h1>
         <div className="flex">
           <button
             onClick={() => setActiveTab('recent')}
             className={`flex-1 py-3 text-sm font-bold border-b-2 transition-colors ${
               activeTab === 'recent'
-                ? 'border-[var(--color-primary)] text-teal-700'
-                : 'border-transparent text-gray-400'
+                ? 'border-[var(--color-primary)] text-[var(--accent-strong)]'
+                : 'border-transparent text-[var(--text-muted)]'
             }`}
           >
             スポット一覧 ({recentPins.length})
@@ -65,7 +65,7 @@ export default function Timeline({ pins, onSelectPin, onDeletePin }: TimelinePro
             className={`flex-1 py-3 text-sm font-bold border-b-2 transition-colors ${
               activeTab === 'history'
                 ? 'border-orange-400 text-orange-600'
-                : 'border-transparent text-gray-400'
+                : 'border-transparent text-[var(--text-muted)]'
             }`}
           >
             思い出 ({visitedPins.length})
@@ -78,7 +78,7 @@ export default function Timeline({ pins, onSelectPin, onDeletePin }: TimelinePro
         {activeTab === 'recent' && (
           <div className="p-4 space-y-3">
             {recentPins.length === 0 && (
-              <div className="text-center text-gray-400 py-20 text-sm leading-relaxed">
+              <div className="text-center text-[var(--text-muted)] py-20 text-sm leading-relaxed">
                 まだスポットがありません。<br />マップを長押しして追加しましょう！
               </div>
             )}
@@ -86,13 +86,13 @@ export default function Timeline({ pins, onSelectPin, onDeletePin }: TimelinePro
               <div
                 key={pin.id}
                 onClick={() => onSelectPin(pin)}
-                className="bg-white rounded-2xl px-4 py-4 shadow-sm border border-gray-100 flex items-center gap-3 cursor-pointer active:scale-[0.98] transition-all group"
+                className="bg-[var(--surface)] rounded-2xl px-4 py-4 shadow-sm border border-[var(--border-soft)] flex items-center gap-3 cursor-pointer active:scale-[0.98] transition-all group"
               >
                 <div className={`p-3 rounded-xl ${getCategoryColor(pin.category)} flex-shrink-0`}>
                   {getCategoryIcon(pin.category, 18)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-bold text-gray-800 text-base truncate">{pin.title}</div>
+                  <div className="font-bold text-[var(--text-strong)] text-base truncate">{pin.title}</div>
                   <div className="flex items-center gap-2 mt-1 flex-wrap">
                     <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
                       pin.status === 'Confirmed' ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-50 text-indigo-600'
@@ -130,7 +130,7 @@ export default function Timeline({ pins, onSelectPin, onDeletePin }: TimelinePro
         {activeTab === 'history' && (
           <div className="p-4 space-y-4">
             {visitedPins.length === 0 && (
-              <div className="text-center text-gray-400 py-20 text-sm leading-relaxed">
+              <div className="text-center text-[var(--text-muted)] py-20 text-sm leading-relaxed">
                 まだ思い出はありません。<br />チェックインして写真を残しましょう！
               </div>
             )}
@@ -138,7 +138,7 @@ export default function Timeline({ pins, onSelectPin, onDeletePin }: TimelinePro
               <div
                 key={pin.id}
                 onClick={() => onSelectPin(pin)}
-                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 cursor-pointer active:scale-[0.98] transition-all group"
+                className="bg-[var(--surface)] rounded-2xl overflow-hidden shadow-sm border border-[var(--border-soft)] cursor-pointer active:scale-[0.98] transition-all group"
               >
                 {pin.photo_url ? (
                   <div className="w-full h-48 relative">

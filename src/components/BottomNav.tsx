@@ -19,7 +19,7 @@ const TABS = [
 export default function BottomNav({ activeTab, onChange }: BottomNavProps) {
   return (
     <div
-      className="flex-shrink-0 bg-white border-t border-gray-100 flex shadow-[0_-1px_12px_rgba(0,0,0,0.07)]"
+      className="flex-shrink-0 bg-[var(--surface)] border-t border-[var(--border-soft)] flex shadow-[0_-1px_12px_rgba(0,0,0,0.07)]"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
       {TABS.map(tab => {
@@ -29,12 +29,14 @@ export default function BottomNav({ activeTab, onChange }: BottomNavProps) {
           <button
             key={tab.id}
             onClick={() => onChange(tab.id)}
-            className={`flex-1 flex flex-col items-center justify-center pt-3 pb-2 gap-1 transition-all active:scale-95 ${
-              isActive ? 'text-teal-600' : 'text-gray-400'
-            }`}
+            className="flex-1 flex flex-col items-center justify-center pt-3 pb-2 gap-1 transition-all active:scale-95"
+            style={{ color: isActive ? 'var(--accent)' : 'var(--text-muted)' }}
           >
             <Icon size={24} strokeWidth={isActive ? 2.5 : 1.8} />
-            <span className={`text-[11px] font-bold ${isActive ? 'text-teal-700' : 'text-gray-400'}`}>
+            <span
+              className="text-[11px] font-bold"
+              style={{ color: isActive ? 'var(--accent-strong)' : 'var(--text-muted)' }}
+            >
               {tab.label}
             </span>
           </button>

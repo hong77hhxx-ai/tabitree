@@ -11,7 +11,7 @@ import CountdownWidget from '@/components/CountdownWidget'
 import NicknameModal from '@/components/NicknameModal'
 import BottomNav from '@/components/BottomNav'
 import HereWidget from '@/components/HereWidget'
-import Settings, { MapTheme } from '@/components/Settings'
+import Settings, { ThemeColor, MapStyle } from '@/components/Settings'
 import AiSearchOverlay from '@/components/AiSearchOverlay'
 import GroupsList from '@/components/GroupsList'
 
@@ -38,7 +38,8 @@ export default function MapPage() {
   const [centerLocation, setCenterLocation] = useState<{lat: number, lng: number} | null>(null)
   const [popupPin, setPopupPin] = useState<Pin | null>(null)
   const [activeTab, setActiveTab] = useState<'map' | 'groups' | 'timeline' | 'settings'>('map')
-  const [mapTheme, setMapTheme] = useState<MapTheme>('default')
+  const [themeColor, setThemeColor] = useState<ThemeColor>('default')
+  const [mapStyle, setMapStyle] = useState<MapStyle>('default')
   const [searchCircle, setSearchCircle] = useState<{lat: number, lng: number, radiusKm: number} | null>(null)
   const [aiSelect, setAiSelect] = useState<{lat: number, lng: number, category: string} | null>(null)
 
@@ -59,9 +60,13 @@ export default function MapPage() {
     } else {
       setShowNicknameModal(true)
     }
-    // マップ色テーマを復元
-    const savedTheme = localStorage.getItem('tabitree_map_theme') as MapTheme | null
-    if (savedTheme) setMapTheme(savedTheme)
+    // テーマカラー・マップ色を復元（旧 tabitree_map_theme からの移行に対応）
+    const legacy = localStorage.getItem('tabitree_map_theme') as ThemeColor | null
+    const savedTheme = (localStorage.getItem('tabitree_theme_color') as ThemeColor | null) ?? legacy
+    const savedMapStyle = (localStorage.getItem('tabitree_map_style') as MapStyle | null)
+      ?? (legacy === 'dark' ? 'dark' : null)
+    if (savedTheme) setThemeColor(savedTheme)
+    if (savedMapStyle) setMapStyle(savedMapStyle)
     // このマップを参加一覧に追加（共有リンク経由でも記録）
     if (groupId) {
       supabase.from('groups').select('*').eq('id', groupId).single()
@@ -71,10 +76,19 @@ export default function MapPage() {
     }
   }, [])
 
-  const handleChangeMapTheme = (theme: MapTheme) => {
-    setMapTheme(theme)
-    localStorage.setItem('tabitree_map_theme', theme)
+  const handleChangeThemeColor = (theme: ThemeColor) => {
+    setThemeColor(theme)
+    localStorage.setItem('tabitree_theme_color', theme)
   }
+  const handleChangeMapStyle = (style: MapStyle) => {
+    setMapStyle(style)
+    localStorage.setItem('tabitree_map_style', style)
+  }
+
+  // テーマカラーを html 要素に反映（アプリ全体のアクセント色・背景・文字色を切替）
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', themeColor)
+  }, [themeColor])
 
   // GPS監視
   useEffect(() => {
@@ -332,8 +346,17 @@ export default function MapPage() {
     }
   }
 
+  // タブ切り替え：マップを選んだら常に現在地から表示する
+  const handleTabChange = (tab: 'map' | 'groups' | 'timeline' | 'settings') => {
+    if (tab === 'map' && userLocationRef.current) {
+      setPopupPin(null)
+      setCenterLocation({ ...userLocationRef.current })
+    }
+    setActiveTab(tab)
+  }
+
   return (
-    <div className="relative w-full h-screen overflow-hidden bg-gray-100 flex flex-col">
+    <div className="relative w-full h-screen overflow-hidden bg-[var(--bg-app)] flex flex-col">
       {showNicknameModal && (
         <NicknameModal onConfirm={(name, avatar) => {
           setNickname(name)
@@ -356,7 +379,7 @@ export default function MapPage() {
             userAvatarUrl={avatarUrl}
             memberLocations={memberLocations}
             searchCircle={searchCircle}
-            mapTheme={mapTheme}
+            mapTheme={mapStyle}
           />
           <MapFilterPanel
             groups={storedGroups}
@@ -380,35 +403,43 @@ export default function MapPage() {
         </div>
       </div>
 
-      {/* タイムライン画面 */}
-      <div className={`flex-1 min-h-0 overflow-hidden ${activeTab === 'timeline' ? 'flex flex-col' : 'hidden'}`}>
-        <Timeline
-          pins={pins}
-          onSelectPin={handleShowPopup}
-          onDeletePin={handleDeletePin}
-        />
-      </div>
+      {/* タイムライン画面（開くたびに最初の状態に戻すため、非表示時はアンマウント） */}
+      {activeTab === 'timeline' && (
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+          <Timeline
+            pins={pins}
+            onSelectPin={handleShowPopup}
+            onDeletePin={handleDeletePin}
+          />
+        </div>
+      )}
 
       {/* グループ画面 */}
-      <div className={`flex-1 min-h-0 overflow-hidden ${activeTab === 'groups' ? 'flex flex-col' : 'hidden'}`}>
-        <GroupsList currentGroupId={groupId} />
-      </div>
+      {activeTab === 'groups' && (
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+          <GroupsList currentGroupId={groupId} />
+        </div>
+      )}
 
       {/* 設定画面 */}
-      <div className={`flex-1 min-h-0 overflow-hidden ${activeTab === 'settings' ? 'flex flex-col' : 'hidden'}`}>
-        <Settings
-          nickname={nickname}
-          avatarUrl={avatarUrl}
-          onSaveProfile={(newName, newAvatar) => {
-            setNickname(newName)
-            setAvatarUrl(newAvatar)
-          }}
-          mapTheme={mapTheme}
-          onChangeMapTheme={handleChangeMapTheme}
-        />
-      </div>
+      {activeTab === 'settings' && (
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+          <Settings
+            nickname={nickname}
+            avatarUrl={avatarUrl}
+            onSaveProfile={(newName, newAvatar) => {
+              setNickname(newName)
+              setAvatarUrl(newAvatar)
+            }}
+            themeColor={themeColor}
+            onChangeThemeColor={handleChangeThemeColor}
+            mapStyle={mapStyle}
+            onChangeMapStyle={handleChangeMapStyle}
+          />
+        </div>
+      )}
 
-      <BottomNav activeTab={activeTab} onChange={setActiveTab} />
+      <BottomNav activeTab={activeTab} onChange={handleTabChange} />
 
       <BottomSheet
         isOpen={isBottomSheetOpen}

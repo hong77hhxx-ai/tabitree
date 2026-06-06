@@ -240,10 +240,10 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete, on
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="absolute bottom-0 left-0 right-0 mx-auto w-full max-w-lg bg-white rounded-t-3xl shadow-xl z-50 p-6 flex flex-col gap-4 max-h-[85vh] overflow-y-auto overflow-x-hidden overscroll-contain"
+            className="absolute bottom-0 left-0 right-0 mx-auto w-full max-w-lg bg-[var(--surface)] rounded-t-3xl shadow-xl z-50 p-6 flex flex-col gap-4 max-h-[85vh] overflow-y-auto overflow-x-hidden overscroll-contain"
           >
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+              <h2 className="text-xl font-bold text-[var(--text-strong)] flex items-center gap-2">
                 <MapPin className="text-[var(--color-primary)]" />
                 {pin?.id ? 'スポットを編集' : '新しいスポット'}
               </h2>
@@ -257,7 +257,7 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete, on
                     ナビする
                   </button>
                 )}
-                <button onClick={onClose} className="p-2 bg-gray-100 rounded-full text-gray-500 hover:bg-gray-200">
+                <button onClick={onClose} className="p-2 bg-[var(--surface-sunken)] rounded-full text-[var(--text-muted)] hover:opacity-80">
                   <X size={20} />
                 </button>
               </div>
@@ -266,7 +266,7 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete, on
             <div className="space-y-4 mt-2">
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <label className="block text-sm font-semibold text-gray-600">カテゴリ</label>
+                  <label className="block text-sm font-semibold text-[var(--text-muted)]">カテゴリ</label>
                   {!pin?.id && formData.category !== 'Here' && (
                     <button
                       onClick={() => {
@@ -289,7 +289,7 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete, on
                       className={`flex items-center gap-1.5 px-4 py-2 rounded-full whitespace-nowrap transition-all ${
                         formData.category === cat.id
                           ? `${cat.bgClass} ${cat.textClass} font-bold ring-2 ring-offset-1 ${cat.ringClass}`
-                          : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                          : 'bg-[var(--surface-sunken)] text-[var(--text-muted)] hover:opacity-80'
                       }`}
                     >
                       {cat.icon}
@@ -301,7 +301,7 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete, on
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-600 mb-1">
+                <label className="block text-sm font-semibold text-[var(--text-muted)] mb-1">
                   {formData.category === 'Here' ? '場所の名前（任意）' : 'タイトル'}
                 </label>
                 <input
@@ -309,7 +309,7 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete, on
                   value={formData.title || ''}
                   onChange={e => handleChange('title', e.target.value)}
                   placeholder={formData.category === 'Here' ? '例: 図書館2F, 学食前' : 'お店や場所の名前'}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:bg-white transition-all text-gray-800"
+                  className="w-full px-4 py-3 bg-[var(--surface-sunken)] border border-[var(--border-soft)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all text-[var(--text-strong)]"
                 />
               </div>
 
@@ -332,7 +332,7 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete, on
                       className={`flex-1 py-2.5 text-sm font-bold rounded-xl border transition-all ${
                         selectedDuration === label
                           ? 'bg-violet-600 text-white border-violet-600'
-                          : 'bg-white text-violet-600 border-violet-200'
+                          : 'bg-[var(--surface-sunken)] text-violet-500 border-violet-300/40'
                       }`}
                     >
                       {label}
@@ -355,7 +355,7 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete, on
                               className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border transition-all active:scale-95 text-sm font-bold ${
                                 count > 0
                                   ? 'bg-violet-100 border-violet-300 text-violet-700'
-                                  : 'bg-white border-violet-200 text-violet-600'
+                                  : 'bg-[var(--surface-sunken)] border-violet-300/40 text-violet-500'
                               }`}
                             >
                               <span>{r.label}</span>
@@ -372,16 +372,16 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete, on
 
               {formData.category !== 'Here' && (
               <div>
-                <label className="block text-sm font-semibold text-gray-600 mb-1">ステータス</label>
-                <div className="flex bg-gray-100 p-1 rounded-xl">
+                <label className="block text-sm font-semibold text-[var(--text-muted)] mb-1">ステータス</label>
+                <div className="flex bg-[var(--surface-sunken)] p-1 rounded-xl">
                   {STATUSES.map(status => (
                     <button
                       key={status}
                       onClick={() => handleChange('status', status)}
                       className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
                         formData.status === status
-                          ? 'bg-white text-[var(--color-primary)] shadow-sm'
-                          : 'text-gray-500 hover:text-gray-700'
+                          ? 'bg-[var(--surface)] text-[var(--color-primary)] shadow-sm'
+                          : 'text-[var(--text-muted)] hover:opacity-80'
                       }`}
                     >
                       {status === 'Planned' ? '行きたい' : status === 'Confirmed' ? '予約済/確定' : '行った'}
@@ -406,7 +406,7 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete, on
               {formData.status === 'Visited' && (
                 <div className="bg-orange-50/50 border border-orange-100 p-4 rounded-xl space-y-4 mt-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-bold text-gray-700">📸 思い出の写真</span>
+                    <span className="text-sm font-bold text-[var(--text-strong)]">📸 思い出の写真</span>
                     <div className={`flex gap-2 ${isUploading || !pin?.id ? 'opacity-50 pointer-events-none' : ''}`}>
                       {/* カメラで撮影 */}
                       <label className="flex items-center gap-1 text-xs font-bold bg-white text-orange-600 px-3 py-1.5 rounded-full border border-orange-200 shadow-sm active:bg-orange-50 cursor-pointer">
@@ -437,9 +437,9 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete, on
 
                   <div className="pt-2 border-t border-orange-100">
                     <div className="flex items-center justify-between mb-2">
-                      <label className="block text-sm font-bold text-gray-700">みんなのスタンプ</label>
+                      <label className="block text-sm font-bold text-[var(--text-strong)]">みんなのスタンプ</label>
                       <span className="text-[10px] text-gray-400 font-medium">
-                        {myReaction ? 'タップで取り消し / 付け替え' : '1人1回まで'}
+                        {myReaction ? 'タップで取り消し / 付け替え' : ''}
                       </span>
                     </div>
                     <div className="flex gap-2">
@@ -469,17 +469,17 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete, on
               )}
 
               <div>
-                <label className="block text-sm font-semibold text-gray-600 mb-1">予定日時</label>
+                <label className="block text-sm font-semibold text-[var(--text-muted)] mb-1">予定日時</label>
                 <div className="space-y-2">
                   <div className="relative">
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none">
                       <Calendar size={16} />
                     </div>
                     <input
                       type="datetime-local"
                       value={formData.scheduled_at ? format(new Date(formData.scheduled_at), "yyyy-MM-dd'T'HH:mm") : ''}
                       onChange={e => handleChange('scheduled_at', e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:bg-white transition-all text-sm text-gray-800"
+                      className="w-full pl-10 pr-4 py-3 bg-[var(--surface-sunken)] border border-[var(--border-soft)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all text-sm text-[var(--text-strong)]"
                     />
                   </div>
                   {formData.scheduled_at && (
@@ -496,13 +496,13 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete, on
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-600 mb-1">メモ (任意)</label>
+                <label className="block text-sm font-semibold text-[var(--text-muted)] mb-1">メモ (任意)</label>
                 <textarea
                   value={formData.notes || ''}
                   onChange={e => handleChange('notes', e.target.value)}
                   placeholder="営業時間、食べたいメニューなど"
                   rows={3}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:bg-white transition-all text-gray-800 resize-none"
+                  className="w-full px-4 py-3 bg-[var(--surface-sunken)] border border-[var(--border-soft)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all text-[var(--text-strong)] resize-none"
                 />
               </div>
             </div>

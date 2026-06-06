@@ -169,6 +169,29 @@ function MapInnerWithMode({
     }
   }, [map, userLocation])
 
+  // ダーク⇔ライトの切替時は colorScheme が変わりGoogleマップが再生成され、
+  // 初期位置（東京）に戻ってしまう。再生成後に現在地へ寄せ直す。
+  const mapRef = useRef(map)
+  mapRef.current = map
+  const userLocRef = useRef(userLocation)
+  userLocRef.current = userLocation
+  const wasDark = useRef(mapTheme === 'dark')
+  useEffect(() => {
+    const isDark = mapTheme === 'dark'
+    if (wasDark.current === isDark) return
+    wasDark.current = isDark
+    // 再生成（新しいインスタンス生成）を待ってから現在地へ移動
+    const t = setTimeout(() => {
+      const m = mapRef.current
+      const loc = userLocRef.current
+      if (m && loc) {
+        m.setCenter({ lat: loc.lat, lng: loc.lng })
+        m.setZoom(14)
+      }
+    }, 450)
+    return () => clearTimeout(t)
+  }, [mapTheme])
+
   const handleMyLocation = () => {
     if (userLocation && map) {
       map.panTo({ lat: userLocation.lat, lng: userLocation.lng })
@@ -312,7 +335,7 @@ function MapInnerWithMode({
 
         {popupPin && (
           <AdvancedMarker position={{ lat: popupPin.lat, lng: popupPin.lng }} zIndex={1000}>
-            <div className="relative bg-white rounded-2xl shadow-xl overflow-hidden w-56 border border-gray-100 mb-12">
+            <div className="relative bg-[var(--surface)] rounded-2xl shadow-xl overflow-hidden w-56 border border-[var(--border-soft)] mb-12">
               {popupPin.photo_url && (
                 <div className="w-full h-28 overflow-hidden">
                   <img src={popupPin.photo_url} alt={popupPin.title} className="w-full h-full object-cover" />
@@ -323,7 +346,7 @@ function MapInnerWithMode({
                   <div className={`p-1 rounded-full ${getCategoryColor(popupPin.category)}`}>
                     {getCategoryIcon(popupPin.category, 12)}
                   </div>
-                  <span className="text-[10px] text-gray-400 font-medium">
+                  <span className="text-[10px] text-[var(--text-muted)] font-medium">
                     {CATEGORY_LABEL[popupPin.category] ?? popupPin.category}
                   </span>
                   {popupPin.category !== 'Here' && (
@@ -336,9 +359,9 @@ function MapInnerWithMode({
                     </span>
                   )}
                 </div>
-                <div className="font-bold text-gray-800 text-sm truncate mb-2">{popupPin.title}</div>
+                <div className="font-bold text-[var(--text-strong)] text-sm truncate mb-2">{popupPin.title}</div>
                 {popupPin.notes && (
-                  <div className="text-xs text-gray-500 line-clamp-2 mb-2">{popupPin.notes}</div>
+                  <div className="text-xs text-[var(--text-muted)] line-clamp-2 mb-2">{popupPin.notes}</div>
                 )}
                 <button
                   onClick={() => onOpenSheet(popupPin)}

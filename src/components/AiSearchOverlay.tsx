@@ -67,14 +67,14 @@ export default function AiSearchOverlay({ center, category, onRadiusChange, onAp
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="bg-white rounded-2xl shadow-lg border border-gray-100 p-3"
+          className="bg-[var(--surface)] rounded-2xl shadow-lg border border-[var(--border-soft)] p-3"
         >
           <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-1.5 text-sm font-bold text-indigo-700">
+            <div className="flex items-center gap-1.5 text-sm font-bold text-indigo-500">
               <Sparkles size={16} />
               AI Select 検索範囲
             </div>
-            <button onClick={onClose} className="p-1 text-gray-400 active:text-gray-600">
+            <button onClick={onClose} className="p-1 text-[var(--text-muted)] active:opacity-70">
               <X size={18} />
             </button>
           </div>
@@ -86,7 +86,7 @@ export default function AiSearchOverlay({ center, category, onRadiusChange, onAp
                 className={`py-2 text-sm font-bold rounded-xl transition-all ${
                   radiusKm === r
                     ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'bg-gray-50 text-indigo-600 border border-indigo-100'
+                    : 'bg-[var(--surface-sunken)] text-indigo-500 border border-indigo-300/30'
                 }`}
               >
                 {r}km
@@ -129,7 +129,7 @@ export default function AiSearchOverlay({ center, category, onRadiusChange, onAp
               animate={{ y: 0, opacity: 1 }}
               className="p-4"
             >
-              <div className="w-full bg-white rounded-2xl shadow-lg py-6 flex flex-col items-center text-indigo-500">
+              <div className="w-full bg-[var(--surface)] rounded-2xl shadow-lg py-6 flex flex-col items-center text-indigo-500">
                 <Loader2 size={28} className="animate-spin mb-2" />
                 <span className="text-sm font-bold">半径{radiusKm}km以内を検索中...</span>
               </div>
@@ -144,14 +144,14 @@ export default function AiSearchOverlay({ center, category, onRadiusChange, onAp
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 28, stiffness: 240 }}
-              className="bg-white rounded-t-3xl shadow-2xl max-h-[55vh] flex flex-col"
+              className="bg-[var(--surface)] rounded-t-3xl shadow-2xl max-h-[55vh] flex flex-col"
             >
               <div className="px-5 pt-4 pb-2 flex items-center justify-between flex-shrink-0">
-                <div className="flex items-center gap-2 text-sm font-bold text-gray-800">
-                  <Sparkles size={16} className="text-indigo-600" />
+                <div className="flex items-center gap-2 text-sm font-bold text-[var(--text-strong)]">
+                  <Sparkles size={16} className="text-indigo-500" />
                   おすすめ（半径{searchedRadius}km・{results.length}件）
                 </div>
-                <button onClick={onClose} className="p-1.5 bg-gray-100 rounded-full text-gray-500">
+                <button onClick={onClose} className="p-1.5 bg-[var(--surface-sunken)] rounded-full text-[var(--text-muted)]">
                   <X size={16} />
                 </button>
               </div>
@@ -161,9 +161,9 @@ export default function AiSearchOverlay({ center, category, onRadiusChange, onAp
                   <div
                     key={idx}
                     onClick={() => onApply(s)}
-                    className="flex gap-3 bg-white border border-gray-100 rounded-2xl shadow-sm active:scale-[0.98] transition-all cursor-pointer group p-2"
+                    className="flex gap-3 bg-[var(--surface)] border border-[var(--border-soft)] rounded-2xl shadow-sm active:scale-[0.98] transition-all cursor-pointer group p-2"
                   >
-                    <div className="relative w-24 h-24 flex-shrink-0 rounded-xl overflow-hidden bg-gray-100">
+                    <div className="relative w-24 h-24 flex-shrink-0 rounded-xl overflow-hidden bg-[var(--surface-sunken)]">
                       <img
                         src={`https://loremflickr.com/400/300/${encodeURIComponent(s.imageSearchTerm || s.name)}?random=${idx}`}
                         alt={s.name}
@@ -186,14 +186,14 @@ export default function AiSearchOverlay({ center, category, onRadiusChange, onAp
                     <div className="flex-1 min-w-0 py-1 pr-1 flex flex-col justify-between">
                       <div>
                         <div className="flex items-center gap-1.5">
-                          <div className="font-bold text-sm text-gray-900 line-clamp-1 flex-1">{s.name}</div>
+                          <div className="font-bold text-sm text-[var(--text-strong)] line-clamp-1 flex-1">{s.name}</div>
                           {typeof s.distanceKm === 'number' && (
-                            <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded-full whitespace-nowrap flex-shrink-0">
+                            <span className="text-[10px] font-bold text-[var(--text-muted)] bg-[var(--surface-sunken)] px-1.5 py-0.5 rounded-full whitespace-nowrap flex-shrink-0">
                               {s.distanceKm < 1 ? `${Math.round(s.distanceKm * 1000)}m` : `${s.distanceKm.toFixed(1)}km`}
                             </span>
                           )}
                         </div>
-                        <div className="text-xs text-gray-500 line-clamp-2 leading-relaxed mt-0.5">{s.reason}</div>
+                        <div className="text-xs text-[var(--text-muted)] line-clamp-2 leading-relaxed mt-0.5">{s.reason}</div>
                       </div>
                       <div className="flex items-center justify-end mt-1">
                         <div className="flex items-center gap-1 text-[10px] font-bold text-white bg-indigo-500 px-2 py-1 rounded-full shadow-sm">
@@ -208,7 +208,7 @@ export default function AiSearchOverlay({ center, category, onRadiusChange, onAp
                 {/* 3件未満：範囲拡大 */}
                 {results.length < 3 && (
                   <div className="text-center pt-1">
-                    <p className="text-xs text-gray-400 mb-2">
+                    <p className="text-xs text-[var(--text-muted)] mb-2">
                       {results.length === 0
                         ? `半径${searchedRadius}km以内に見つかりませんでした`
                         : `この範囲では${results.length}件見つかりました`}
@@ -222,7 +222,7 @@ export default function AiSearchOverlay({ center, category, onRadiusChange, onAp
                         半径{nextRadius}kmに広げて再検索
                       </button>
                     ) : (
-                      <p className="text-xs text-gray-400">これ以上範囲を広げられません</p>
+                      <p className="text-xs text-[var(--text-muted)]">これ以上範囲を広げられません</p>
                     )}
                   </div>
                 )}

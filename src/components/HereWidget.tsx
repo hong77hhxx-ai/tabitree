@@ -29,11 +29,11 @@ export default function HereWidget({ pins, onSelectPin }: HereWidgetProps) {
             initial={{ opacity: 0, y: 8, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.95 }}
-            className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden w-52"
+            className="bg-[var(--surface)] rounded-2xl shadow-xl border border-[var(--border-soft)] overflow-hidden w-52"
           >
-            <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-              <span className="text-xs font-bold text-violet-700">今ここにいる人</span>
-              <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-gray-600">
+            <div className="px-4 py-3 border-b border-[var(--border-soft)] flex items-center justify-between">
+              <span className="text-xs font-bold text-violet-500">今ここにいる人</span>
+              <button onClick={() => setIsOpen(false)} className="text-[var(--text-muted)] hover:opacity-70">
                 <X size={14} />
               </button>
             </div>
@@ -42,17 +42,17 @@ export default function HereWidget({ pins, onSelectPin }: HereWidgetProps) {
                 <button
                   key={pin.id}
                   onClick={() => { onSelectPin(pin); setIsOpen(false) }}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-violet-50 active:bg-violet-100 transition-colors text-left"
+                  className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-violet-500/10 active:bg-violet-500/20 transition-colors text-left"
                 >
                   <div className="w-8 h-8 rounded-full bg-violet-500 flex items-center justify-center flex-shrink-0">
                     <Users size={14} className="text-white" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-bold text-gray-800 truncate">
+                    <div className="text-sm font-bold text-[var(--text-strong)] truncate">
                       {pin.title || 'ここにいるよ'}
                     </div>
                     {pin.notes && (
-                      <div className="text-xs text-gray-400 truncate">{pin.notes}</div>
+                      <div className="text-xs text-[var(--text-muted)] truncate">{pin.notes}</div>
                     )}
                   </div>
                 </button>

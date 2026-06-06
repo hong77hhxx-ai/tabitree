@@ -104,7 +104,7 @@ export default function Home() {
 
   return (
     <div
-      className="min-h-screen bg-[#f0faf6] flex flex-col"
+      className="min-h-screen bg-[var(--surface-muted-2)] flex flex-col"
       style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
       {/* ヘッダー */}
@@ -123,10 +123,10 @@ export default function Home() {
 
       {/* マップ一覧 */}
       <div className="flex-1 overflow-y-auto px-5 py-5">
-        <h2 className="text-sm font-bold text-gray-500 mb-3 px-1">参加中のマップ</h2>
+        <h2 className="text-sm font-bold text-[var(--text-muted)] mb-3 px-1">参加中のマップ</h2>
 
         {groups.length === 0 ? (
-          <div className="text-center text-gray-400 py-16">
+          <div className="text-center text-[var(--text-muted)] py-16">
             <Compass size={40} className="mx-auto mb-3 opacity-40" />
             <p className="text-sm leading-relaxed">まだマップがありません。<br />下のボタンから始めましょう！</p>
           </div>
@@ -139,7 +139,7 @@ export default function Home() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.04 }}
                 onClick={() => router.push(`/map/${g.id}`)}
-                className="bg-white rounded-2xl shadow-sm border border-gray-100 flex items-center overflow-hidden active:scale-[0.98] transition-all cursor-pointer"
+                className="bg-[var(--surface)] rounded-2xl shadow-sm border border-[var(--border-soft)] flex items-center overflow-hidden active:scale-[0.98] transition-all cursor-pointer"
               >
                 {/* カラーバー */}
                 <div className="w-2 self-stretch flex-shrink-0" style={{ backgroundColor: g.color || '#88D8C0' }} />
@@ -151,8 +151,8 @@ export default function Home() {
                     <MapPin size={20} className="text-white" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="font-bold text-gray-800 truncate">{g.name}</div>
-                    <div className="text-xs text-gray-400">
+                    <div className="font-bold text-[var(--text-strong)] truncate">{g.name}</div>
+                    <div className="text-xs text-[var(--text-muted)]">
                       {formatDistanceToNow(new Date(g.joinedAt), { addSuffix: true, locale: ja })}に参加
                     </div>
                   </div>
@@ -181,7 +181,7 @@ export default function Home() {
         </button>
         <button
           onClick={() => { closeForm(); setMode('join') }}
-          className="w-full bg-white active:bg-gray-50 text-gray-700 font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all border border-gray-200 text-base"
+          className="w-full bg-[var(--surface)] active:opacity-80 text-[var(--text-strong)] font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all border border-[var(--border-soft)] text-base"
         >
           <Link2 size={20} />
           URLで参加する
@@ -204,15 +204,15 @@ export default function Home() {
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 26, stiffness: 240 }}
-              className="relative bg-white rounded-t-3xl shadow-2xl w-full max-w-lg px-6 pt-5"
+              className="relative bg-[var(--surface)] rounded-t-3xl shadow-2xl w-full max-w-lg px-6 pt-5"
               style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 2rem)' }}
             >
-              <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-5" />
+              <div className="w-10 h-1 bg-[var(--border-soft)] rounded-full mx-auto mb-5" />
               <div className="flex items-center justify-between mb-5">
-                <h2 className="text-lg font-bold text-gray-800">
+                <h2 className="text-lg font-bold text-[var(--text-strong)]">
                   {mode === 'create' ? '新しいマップを作る' : 'URLで参加する'}
                 </h2>
-                <button onClick={closeForm} className="p-1.5 bg-gray-100 rounded-full text-gray-500">
+                <button onClick={closeForm} className="p-1.5 bg-[var(--surface-sunken)] rounded-full text-[var(--text-muted)]">
                   <X size={18} />
                 </button>
               </div>
@@ -221,7 +221,7 @@ export default function Home() {
               {mode === 'create' && (
                 <form onSubmit={handleCreateGroup} className="space-y-5">
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">マップ名</label>
+                    <label className="block text-sm font-bold text-[var(--text-strong)] mb-2">マップ名</label>
                     <input
                       type="text"
                       placeholder="例: 北海道旅行2026"
@@ -229,12 +229,12 @@ export default function Home() {
                       onChange={e => setGroupName(e.target.value)}
                       autoFocus
                       maxLength={50}
-                      className="w-full px-4 py-4 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all bg-gray-50 focus:bg-white text-gray-800 text-base"
+                      className="w-full px-4 py-4 rounded-2xl border border-[var(--border-soft)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all bg-[var(--surface-sunken)] text-[var(--text-strong)] text-base"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">カラー</label>
+                    <label className="block text-sm font-bold text-[var(--text-strong)] mb-2">カラー</label>
                     <div className="flex gap-3">
                       {GROUP_COLORS.map(color => (
                         <button
@@ -270,16 +270,16 @@ export default function Home() {
               {mode === 'join' && (
                 <form onSubmit={handleJoin} className="space-y-5">
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">マップのURL または ID</label>
+                    <label className="block text-sm font-bold text-[var(--text-strong)] mb-2">マップのURL または ID</label>
                     <input
                       type="text"
                       placeholder="https://tabitree.vercel.app/map/..."
                       value={joinInput}
                       onChange={e => setJoinInput(e.target.value)}
                       autoFocus
-                      className="w-full px-4 py-4 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all bg-gray-50 focus:bg-white text-gray-800 text-base"
+                      className="w-full px-4 py-4 rounded-2xl border border-[var(--border-soft)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all bg-[var(--surface-sunken)] text-[var(--text-strong)] text-base"
                     />
-                    <p className="text-xs text-gray-400 mt-2">共有されたURLをそのまま貼り付けてもOKです。</p>
+                    <p className="text-xs text-[var(--text-muted)] mt-2">共有されたURLをそのまま貼り付けてもOKです。</p>
                   </div>
 
                   {errorMsg && (

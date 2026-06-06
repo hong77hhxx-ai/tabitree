@@ -20,6 +20,56 @@
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
+
+  /* ===== テーマカラー用セマンティック変数（デフォルト = 現在の見た目） ===== */
+  --color-primary: #88D8C0;          /* アクセント塗り */
+  --accent: #0d9488;                 /* アクセント文字/アイコン（teal-600） */
+  --accent-strong: #0f766e;          /* 濃いアクセント文字（teal-700） */
+  --surface: #ffffff;                /* カード・ヘッダー・ナビ・モーダル */
+  --surface-sunken: #f6f8fa;         /* 入力欄・チップ・くぼみ */
+  --surface-muted: #f8fcfb;          /* 設定/タイムライン画面の背景 */
+  --surface-muted-2: #f0faf6;        /* グループ画面の背景 */
+  --bg-app: #f3f4f6;                 /* マップ画面のベース背景 */
+  --text-strong: #1f2937;            /* 主要テキスト（gray-800） */
+  --text-muted: #9ca3af;             /* 補助テキスト（gray-400） */
+  --border-soft: #f3f4f6;            /* 境界線（gray-100） */
+}
+
+/* ピンク */
+:root[data-theme="pink"] {
+  --color-primary: #f472b6;
+  --accent: #db2777;
+  --accent-strong: #be185d;
+  --surface-muted: #fdf2f8;
+  --surface-muted-2: #fce7f3;
+  --bg-app: #fbe3f0;
+}
+
+/* ブルー（水色） */
+:root[data-theme="blue"] {
+  --color-primary: #38bdf8;
+  --accent: #0284c7;
+  --accent-strong: #0369a1;
+  --surface-muted: #f0f9ff;
+  --surface-muted-2: #e0f2fe;
+  --bg-app: #dbeefe;
+}
+
+/* ダーク */
+:root[data-theme="dark"] {
+  --color-primary: #2dd4bf;
+  --accent: #5eead4;
+  --accent-strong: #99f6e4;
+  --surface: #1e293b;
+  --surface-sunken: #0f172a;
+  --surface-muted: #0f172a;
+  --surface-muted-2: #0f172a;
+  --bg-app: #020617;
+  --text-strong: #e2e8f0;
+  --text-muted: #94a3b8;
+  --border-soft: #334155;
+  --background: #0f172a;
+  --foreground: #e2e8f0;
 }
 
 html, body {

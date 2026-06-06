@@ -31,7 +31,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ja" className={`${nunito.variable} antialiased`}>
+    <html lang="ja" className={`${nunito.variable} antialiased`} suppressHydrationWarning>
+      <head>
+        {/* 保存済みテーマカラーを描画前に適用（フラッシュ防止・全ルート共通） */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var t=localStorage.getItem('tabitree_theme_color')||localStorage.getItem('tabitree_map_theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}`,
+          }}
+        />
+      </head>
       <body className="flex flex-col bg-white">{children}</body>
     </html>
   );

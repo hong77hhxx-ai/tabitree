@@ -137,23 +137,23 @@ export default function GroupsList({ currentGroupId }: GroupsListProps) {
   }
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 bg-[#f0faf6] overflow-y-auto">
+    <div className="flex-1 flex flex-col min-h-0 bg-[var(--surface-muted-2)] overflow-y-auto">
       {/* ヘッダー */}
-      <div className="px-6 pt-6 pb-4 bg-white border-b border-gray-100 flex-shrink-0">
-        <h1 className="text-xl font-extrabold text-gray-850 flex items-center gap-2">
-          <Layers className="text-teal-600" size={24} />
+      <div className="px-6 pt-6 pb-4 bg-[var(--surface)] border-b border-[var(--border-soft)] flex-shrink-0">
+        <h1 className="text-xl font-extrabold text-[var(--text-strong)] flex items-center gap-2">
+          <Layers style={{ color: 'var(--accent)' }} size={24} />
           マップグループ
         </h1>
-        <p className="text-xs text-gray-500 mt-1">あなたが参加しているマップの切り替え・管理ができます。</p>
+        <p className="text-xs text-[var(--text-muted)] mt-1">あなたが参加しているマップの切り替え・管理ができます。</p>
       </div>
 
       {/* マップ一覧 */}
       <div className="flex-1 px-5 py-5 overflow-y-auto">
-        <h2 className="text-xs font-bold text-gray-400 mb-3 px-1 tracking-wider uppercase">参加中のマップ</h2>
+        <h2 className="text-xs font-bold text-[var(--text-muted)] mb-3 px-1 tracking-wider uppercase">参加中のマップ</h2>
 
         {groups.length === 0 ? (
-          <div className="text-center text-gray-400 py-16 bg-white rounded-2xl shadow-sm border border-gray-100/50">
-            <Compass size={40} className="mx-auto mb-3 opacity-40 text-teal-600" />
+          <div className="text-center text-[var(--text-muted)] py-16 bg-[var(--surface)] rounded-2xl shadow-sm border border-[var(--border-soft)]">
+            <Compass size={40} className="mx-auto mb-3 opacity-40" style={{ color: 'var(--accent)' }} />
             <p className="text-sm leading-relaxed">まだマップがありません。<br />下のボタンから始めましょう！</p>
           </div>
         ) : (
@@ -169,8 +169,8 @@ export default function GroupsList({ currentGroupId }: GroupsListProps) {
                   onClick={() => {
                     if (!isCurrent) router.push(`/map/${g.id}`)
                   }}
-                  className={`bg-white rounded-2xl shadow-sm border flex items-center overflow-hidden active:scale-[0.98] transition-all cursor-pointer ${
-                    isCurrent ? 'border-teal-500 ring-2 ring-teal-500/20' : 'border-gray-100 hover:border-gray-200'
+                  className={`bg-[var(--surface)] rounded-2xl shadow-sm border flex items-center overflow-hidden active:scale-[0.98] transition-all cursor-pointer ${
+                    isCurrent ? 'border-[var(--color-primary)] ring-2 ring-[var(--color-primary)]/20' : 'border-[var(--border-soft)]'
                   }`}
                 >
                   {/* カラーバー */}
@@ -208,14 +208,17 @@ export default function GroupsList({ currentGroupId }: GroupsListProps) {
                     </label>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-gray-800 truncate">{g.name}</span>
+                        <span className="font-bold text-[var(--text-strong)] truncate">{g.name}</span>
                         {isCurrent && (
-                          <span className="bg-teal-50 text-teal-700 text-[10px] px-1.5 py-0.5 rounded-full font-bold border border-teal-100 flex-shrink-0">
+                          <span
+                            className="text-[10px] px-1.5 py-0.5 rounded-full font-bold flex-shrink-0"
+                            style={{ color: 'var(--accent-strong)', backgroundColor: 'color-mix(in srgb, var(--color-primary) 18%, transparent)' }}
+                          >
                             表示中
                           </span>
                         )}
                       </div>
-                      <div className="text-xs text-gray-400 mt-0.5">
+                      <div className="text-xs text-[var(--text-muted)] mt-0.5">
                         {g.joinedAt ? formatDistanceToNow(new Date(g.joinedAt), { addSuffix: true, locale: ja }) : ''}に参加
                       </div>
                     </div>
@@ -235,17 +238,18 @@ export default function GroupsList({ currentGroupId }: GroupsListProps) {
       </div>
 
       {/* アクションボタン */}
-      <div className="flex-shrink-0 px-5 pb-8 pt-4 bg-white border-t border-gray-100 flex flex-col gap-3">
+      <div className="flex-shrink-0 px-5 pb-8 pt-4 bg-[var(--surface)] border-t border-[var(--border-soft)] flex flex-col gap-3">
         <button
           onClick={() => { closeForm(); setMode('create') }}
-          className="w-full bg-teal-600 active:bg-teal-700 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-md text-base"
+          className="w-full text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-md text-base active:opacity-90"
+          style={{ backgroundColor: 'var(--accent)' }}
         >
           <Plus size={22} />
           新しいマップを作る
         </button>
         <button
           onClick={() => { closeForm(); setMode('join') }}
-          className="w-full bg-white active:bg-gray-50 text-gray-700 font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all border border-gray-200 text-base"
+          className="w-full bg-[var(--surface)] active:opacity-80 text-[var(--text-strong)] font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all border border-[var(--border-soft)] text-base"
         >
           <Link2 size={20} />
           URLで参加する
@@ -268,15 +272,15 @@ export default function GroupsList({ currentGroupId }: GroupsListProps) {
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 26, stiffness: 240 }}
-              className="relative bg-white rounded-t-3xl shadow-2xl w-full max-w-lg px-6 pt-5"
+              className="relative bg-[var(--surface)] rounded-t-3xl shadow-2xl w-full max-w-lg px-6 pt-5"
               style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 2rem)' }}
             >
-              <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-5" />
+              <div className="w-10 h-1 bg-[var(--border-soft)] rounded-full mx-auto mb-5" />
               <div className="flex items-center justify-between mb-5">
-                <h2 className="text-lg font-bold text-gray-800">
+                <h2 className="text-lg font-bold text-[var(--text-strong)]">
                   {mode === 'create' ? '新しいマップを作る' : 'URLで参加する'}
                 </h2>
-                <button onClick={closeForm} className="p-1.5 bg-gray-100 rounded-full text-gray-500">
+                <button onClick={closeForm} className="p-1.5 bg-[var(--surface-sunken)] rounded-full text-[var(--text-muted)]">
                   <X size={18} />
                 </button>
               </div>
@@ -285,7 +289,7 @@ export default function GroupsList({ currentGroupId }: GroupsListProps) {
               {mode === 'create' && (
                 <form onSubmit={handleCreateGroup} className="space-y-5">
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">マップ名</label>
+                    <label className="block text-sm font-bold text-[var(--text-strong)] mb-2">マップ名</label>
                     <input
                       type="text"
                       placeholder="例: 北海道旅行2026"
@@ -293,12 +297,12 @@ export default function GroupsList({ currentGroupId }: GroupsListProps) {
                       onChange={e => setGroupName(e.target.value)}
                       autoFocus
                       maxLength={50}
-                      className="w-full px-4 py-4 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all bg-gray-50 focus:bg-white text-gray-800 text-base"
+                      className="w-full px-4 py-4 rounded-2xl border border-[var(--border-soft)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all bg-[var(--surface-sunken)] text-[var(--text-strong)] text-base"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">カラー</label>
+                    <label className="block text-sm font-bold text-[var(--text-strong)] mb-2">カラー</label>
                     <div className="flex gap-3">
                       {GROUP_COLORS.map(color => (
                         <button
@@ -334,16 +338,16 @@ export default function GroupsList({ currentGroupId }: GroupsListProps) {
               {mode === 'join' && (
                 <form onSubmit={handleJoin} className="space-y-5">
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">マップのURL または ID</label>
+                    <label className="block text-sm font-bold text-[var(--text-strong)] mb-2">マップのURL または ID</label>
                     <input
                       type="text"
                       placeholder="https://tabitree.vercel.app/map/..."
                       value={joinInput}
                       onChange={e => setJoinInput(e.target.value)}
                       autoFocus
-                      className="w-full px-4 py-4 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all bg-gray-50 focus:bg-white text-gray-800 text-base"
+                      className="w-full px-4 py-4 rounded-2xl border border-[var(--border-soft)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all bg-[var(--surface-sunken)] text-[var(--text-strong)] text-base"
                     />
-                    <p className="text-xs text-gray-400 mt-2">共有されたURLをそのまま貼り付けてもOKです。</p>
+                    <p className="text-xs text-[var(--text-muted)] mt-2">共有されたURLをそのまま貼り付けてもOKです。</p>
                   </div>
 
                   {errorMsg && (
