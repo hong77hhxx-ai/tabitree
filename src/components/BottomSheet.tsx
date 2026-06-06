@@ -1,6 +1,6 @@
 'use client'
 
-import { Pin, uploadPhoto } from '@/lib/supabase'
+import { Pin, uploadPhoto, supabase, getMyReaction, setMyReaction } from '@/lib/supabase'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Save, MapPin, Utensils, Bed, Camera, Droplets, Sparkles, Loader2, ImagePlus, CheckCircle, Heart, ThumbsUp, Smile, Navigation, Calendar, Clock, Trash2, Users } from 'lucide-react'
 import { useState, useEffect } from 'react'
@@ -42,6 +42,8 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete, on
   const [isUploading, setIsUploading] = useState(false)
   const [showRadiusPicker, setShowRadiusPicker] = useState(false)
   const [searchedRadius, setSearchedRadius] = useState<number | null>(null)
+  // この思い出に自分が付けたスタンプ（1アカウント1回まで）
+  const [myReaction, setMyReactionState] = useState<string | null>(null)
 
 
   // 絵文字の定義
@@ -73,6 +75,7 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete, on
       setSelectedDuration(null)
       setShowRadiusPicker(false)
       setSearchedRadius(null)
+      setMyReactionState(pin.id ? getMyReaction(pin.id) : null)
     }
   }, [pin])
 
@@ -89,6 +92,26 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete, on
         reactions: { ...currentReactions, [emojiId]: currentCount + 1 }
       }
     })
+  }
+
+  // 思い出のスタンプ：1アカウントにつき1回のみ。
+  // 同じものを再タップで取り消し、別のものをタップで付け替え。即DB保存。
+  const handleMemoryReaction = (emojiId: string) => {
+    if (!pin?.id) return
+    const reactions: Record<string, number> = { ...(formData.reactions || {}) }
+    let next: string | null
+    if (myReaction === emojiId) {
+      reactions[emojiId] = Math.max(0, (reactions[emojiId] || 0) - 1)
+      next = null
+    } else {
+      if (myReaction) reactions[myReaction] = Math.max(0, (reactions[myReaction] || 0) - 1)
+      reactions[emojiId] = (reactions[emojiId] || 0) + 1
+      next = emojiId
+    }
+    setFormData(prev => ({ ...prev, reactions }))
+    setMyReactionState(next)
+    setMyReaction(pin.id, next)
+    supabase.from('pins').update({ reactions }).eq('id', pin.id)
   }
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -254,7 +277,7 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete, on
                       className="flex items-center gap-1 text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full hover:bg-indigo-100 transition-colors disabled:opacity-50"
                     >
                       <Sparkles size={14} />
-                      AI Select ✨
+                      AI Select
                     </button>
                   )}
                 </div>
@@ -413,18 +436,30 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete, on
                   )}
 
                   <div className="pt-2 border-t border-orange-100">
-                    <label className="block text-sm font-bold text-gray-700 mb-2">みんなのスタンプ</label>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-bold text-gray-700">みんなのスタンプ</label>
+                      <span className="text-[10px] text-gray-400 font-medium">
+                        {myReaction ? 'タップで取り消し / 付け替え' : '1人1回まで'}
+                      </span>
+                    </div>
                     <div className="flex gap-2">
                       {EMOJIS.map(emoji => {
                         const count = formData.reactions?.[emoji.id] || 0
+                        const mine = myReaction === emoji.id
                         return (
                           <button
                             key={emoji.id}
-                            onClick={() => handleReaction(emoji.id)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-full hover:bg-gray-50 hover:border-gray-300 transition-all active:scale-95 shadow-sm"
+                            onClick={() => handleMemoryReaction(emoji.id)}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all active:scale-95 shadow-sm border ${
+                              mine
+                                ? 'bg-orange-100 border-orange-300 ring-2 ring-orange-200'
+                                : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300'
+                            }`}
                           >
                             <span className="text-base">{emoji.label}</span>
-                            {count > 0 && <span className="text-xs font-bold text-gray-600">{count}</span>}
+                            {count > 0 && (
+                              <span className={`text-xs font-bold ${mine ? 'text-orange-600' : 'text-gray-600'}`}>{count}</span>
+                            )}
                           </button>
                         )
                       })}

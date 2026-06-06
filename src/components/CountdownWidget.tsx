@@ -35,21 +35,20 @@ export default function CountdownWidget({ pins, onPinSelect }: CountdownWidgetPr
   // 次の予定（今日の場合）
   const nextPin = scheduledPins.find(p => isAfter(parseISO(p.scheduled_at!), now))
 
-  const iconColor = !showCountdown && isTripDay ? 'bg-orange-100 text-orange-600' : 'bg-indigo-100 text-indigo-600'
+  const iconColor = !showCountdown && isTripDay ? 'text-orange-600' : 'text-indigo-600'
 
   return (
     <div
-      className="absolute left-4 z-20 flex flex-col-reverse items-start gap-2"
-      style={{ bottom: 'max(env(safe-area-inset-bottom, 0px) + 88px, 88px)' }}
+      className="absolute right-4 bottom-[168px] z-20 flex flex-col-reverse items-end gap-2"
     >
-      {/* カレンダーアイコン（常時表示・下に固定） */}
+      {/* カレンダーアイコン（常時表示・下に固定、ピン追加ボタンの上） */}
       <button
         onClick={() => setIsExpanded(v => !v)}
-        className="relative p-2.5 rounded-2xl shadow-lg border border-white/60 bg-white/95 backdrop-blur-md active:scale-95 transition-transform"
+        className="relative bg-white p-3.5 rounded-full shadow-lg border border-gray-100 active:scale-95 transition-transform"
       >
-        <div className={`p-1.5 rounded-xl ${iconColor}`}>
-          {!showCountdown && isTripDay ? <Sparkles size={22} className="animate-pulse" /> : <Calendar size={22} />}
-        </div>
+        {!showCountdown && isTripDay
+          ? <Sparkles size={24} className={`${iconColor} animate-pulse`} />
+          : <Calendar size={24} className={iconColor} />}
         {!isExpanded && (
           <span className="absolute -top-1 -right-1 w-3 h-3 bg-rose-500 rounded-full border-2 border-white" />
         )}
@@ -64,7 +63,7 @@ export default function CountdownWidget({ pins, onPinSelect }: CountdownWidgetPr
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 12, opacity: 0, scale: 0.96 }}
             transition={{ type: 'spring', damping: 22, stiffness: 280 }}
-            className="origin-bottom-left bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-white/60 p-3 w-60"
+            className="origin-bottom-right bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-white/60 p-3 w-60"
           >
             {!showCountdown && isTripDay ? (
               <>

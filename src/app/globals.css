@@ -65,9 +65,9 @@ input, textarea, [contenteditable] {
 
 /* GPS現在地マーカー */
 @keyframes pulse {
-  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.7); }
-  70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(37, 99, 235, 0); }
-  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+  0% { transform: scale(0.97); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.5); }
+  70% { transform: scale(1); box-shadow: 0 0 0 12px rgba(37, 99, 235, 0); }
+  100% { transform: scale(0.97); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
 }
 
 .gps-marker {
@@ -76,8 +76,22 @@ input, textarea, [contenteditable] {
   background-color: #2563eb;
   border: 3px solid white;
   border-radius: 50%;
-  animation: pulse 2s infinite;
+  animation: pulse 4.5s ease-in-out infinite;
   box-shadow: 0 0 8px rgba(0,0,0,0.35);
+}
+
+/* アバター現在地マーカーのリング（ゆっくり落ち着いた波紋） */
+@keyframes avatar-pulse {
+  0%   { transform: scale(1);   opacity: 0.45; }
+  70%  { transform: scale(1.5); opacity: 0; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+.avatar-pulse-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 1rem;
+  background-color: #3b82f6;
+  animation: avatar-pulse 4.5s ease-in-out infinite;
 }
 
 /* MapLibre Popup カスタム */
@@ -93,16 +107,16 @@ input, textarea, [contenteditable] {
 
 /* 「今ここにいるよ」ピンのパルスアニメーション */
 @keyframes here-pulse {
-  0% { transform: scale(1); opacity: 0.8; }
-  50% { transform: scale(1.6); opacity: 0; }
-  100% { transform: scale(1); opacity: 0; }
+  0% { transform: scale(1); opacity: 0.6; }
+  70% { transform: scale(1.7); opacity: 0; }
+  100% { transform: scale(1.7); opacity: 0; }
 }
 .here-pulse-ring {
   position: absolute;
   inset: 0;
   border-radius: 9999px;
   background-color: #8b5cf6;
-  animation: here-pulse 1.8s ease-out infinite;
+  animation: here-pulse 4s ease-in-out infinite;
 }
 
 /* iOS momentum scroll */

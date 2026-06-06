@@ -43,7 +43,20 @@ export type Group = {
   id: string
   name: string
   color: string | null
+  photo_url: string | null
   created_at: string
+}
+
+// グループの写真をアップロード（pin-photos バケットを流用）
+export const uploadGroupPhoto = async (file: File, groupId: string): Promise<string | null> => {
+  const fileExt = file.name.split('.').pop()
+  const filePath = `groups/${groupId}_${Date.now()}.${fileExt}`
+
+  const { error } = await supabase.storage.from('pin-photos').upload(filePath, file)
+  if (error) { console.error('Group photo upload error:', error); return null }
+
+  const { data } = supabase.storage.from('pin-photos').getPublicUrl(filePath)
+  return data.publicUrl
 }
 
 // マップの色パレット（6色）
@@ -57,6 +70,7 @@ export type StoredGroup = {
   id: string
   name: string
   color: string | null
+  photo_url?: string | null
   joinedAt: string
 }
 
@@ -72,14 +86,27 @@ export const getStoredGroups = (): StoredGroup[] => {
   }
 }
 
-export const addStoredGroup = (group: { id: string, name: string, color: string | null }) => {
+export const addStoredGroup = (group: { id: string, name: string, color: string | null, photo_url?: string | null }) => {
   if (typeof window === 'undefined') return
   const groups = getStoredGroups()
-  if (groups.some(g => g.id === group.id)) return
+  const existing = groups.find(g => g.id === group.id)
+  if (existing) {
+    // 既存なら写真など最新情報を反映
+    const merged = groups.map(g => g.id === group.id ? { ...g, ...group } : g)
+    localStorage.setItem(GROUPS_KEY, JSON.stringify(merged))
+    return
+  }
   const updated: StoredGroup[] = [
     { ...group, joinedAt: new Date().toISOString() },
     ...groups,
   ]
+  localStorage.setItem(GROUPS_KEY, JSON.stringify(updated))
+}
+
+// 参加グループの写真をローカルにも反映
+export const updateStoredGroupPhoto = (id: string, photo_url: string | null) => {
+  if (typeof window === 'undefined') return
+  const updated = getStoredGroups().map(g => g.id === id ? { ...g, photo_url } : g)
   localStorage.setItem(GROUPS_KEY, JSON.stringify(updated))
 }
 
@@ -121,4 +148,30 @@ export const getUserId = (): string => {
     localStorage.setItem('tabitree_user_id', id)
   }
   return id
+}
+
+// 思い出のリアクション（いいね・絵文字）は1アカウントにつき1ピン1回まで。
+// 自分がどのピンにどのスタンプを付けたかを localStorage で記録する。
+const MY_REACTIONS_KEY = 'tabitree_my_reactions'
+
+const getMyReactions = (): Record<string, string> => {
+  if (typeof window === 'undefined') return {}
+  try {
+    return JSON.parse(localStorage.getItem(MY_REACTIONS_KEY) || '{}')
+  } catch {
+    return {}
+  }
+}
+
+export const getMyReaction = (pinId: string): string | null => {
+  if (!pinId) return null
+  return getMyReactions()[pinId] || null
+}
+
+export const setMyReaction = (pinId: string, emojiId: string | null) => {
+  if (typeof window === 'undefined' || !pinId) return
+  const all = getMyReactions()
+  if (emojiId) all[pinId] = emojiId
+  else delete all[pinId]
+  localStorage.setItem(MY_REACTIONS_KEY, JSON.stringify(all))
 }

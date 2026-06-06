@@ -23,6 +23,7 @@ type MapComponentProps = {
   onClosePopup?: () => void
   centerLocation?: { lat: number, lng: number } | null
   userLocation?: { lat: number, lng: number } | null
+  userAvatarUrl?: string | null
   memberLocations?: MemberLocation[]
   searchCircle?: { lat: number, lng: number, radiusKm: number } | null
   mapTheme?: 'default' | 'dark'
@@ -151,17 +152,27 @@ type PinFilter = 'all' | 'plan' | 'memory'
 
 function MapInnerWithMode({
   pins, onAddPin, onOpenSheet, popupPin, onClosePopup,
-  centerLocation, userLocation, memberLocations = [], searchCircle, mapTheme = 'default',
+  centerLocation, userLocation, userAvatarUrl, memberLocations = [], searchCircle, mapTheme = 'default',
   addMode, onToggleAddMode,
 }: MapComponentProps & { addMode: boolean, onToggleAddMode: () => void }) {
   const map = useMap()
   const [filter, setFilter] = useState<PinFilter>('all')
   const [filterOpen, setFilterOpen] = useState(false)
+  const didInitialCenter = useRef(false)
+
+  // 現在地を初めて取得したら、一度だけそこを初期位置にする
+  useEffect(() => {
+    if (map && userLocation && !didInitialCenter.current) {
+      didInitialCenter.current = true
+      map.panTo({ lat: userLocation.lat, lng: userLocation.lng })
+      map.setZoom(14)
+    }
+  }, [map, userLocation])
 
   const handleMyLocation = () => {
     if (userLocation && map) {
       map.panTo({ lat: userLocation.lat, lng: userLocation.lng })
-      map.setZoom(16)
+      map.setZoom(14)
     } else {
       alert('現在地を取得中です。ブラウザの位置情報設定を確認してください。')
     }
@@ -233,7 +244,7 @@ function MapInnerWithMode({
 
       <Map
         mapId={MAP_ID}
-        defaultCenter={{ lat: 34.6937, lng: 135.5023 }}
+        defaultCenter={{ lat: 35.6812, lng: 139.7671 }}
         defaultZoom={12}
         gestureHandling="greedy"
         disableDefaultUI={true}
@@ -269,18 +280,18 @@ function MapInnerWithMode({
                 </div>
               </div>
             ) : pin.status === 'Visited' && pin.photo_url ? (
-              <div className="flex flex-col items-center cursor-pointer drop-shadow-lg">
-                <div className="bg-white p-1.5 rounded-2xl border-2 border-orange-300 shadow-md">
-                  <div className="w-20 h-20 rounded-xl overflow-hidden">
+              <div className="flex flex-col items-center cursor-pointer drop-shadow-md">
+                <div className="bg-white p-1 rounded-xl border-2 border-orange-300 shadow-sm">
+                  <div className="w-12 h-12 rounded-lg overflow-hidden">
                     <img src={pin.photo_url} alt={pin.title} className="w-full h-full object-cover" />
                   </div>
                   {pin.title && (
-                    <div className="text-[11px] font-bold text-center mt-1 text-gray-700 truncate max-w-[88px]">
+                    <div className="text-[9px] font-bold text-center mt-0.5 text-gray-700 truncate max-w-[56px] leading-tight">
                       {pin.title}
                     </div>
                   )}
                 </div>
-                <div className="w-0 h-0 border-l-[7px] border-r-[7px] border-t-[9px] border-l-transparent border-r-transparent border-t-orange-300" />
+                <div className="w-0 h-0 border-l-[5px] border-r-[5px] border-t-[7px] border-l-transparent border-r-transparent border-t-orange-300" />
               </div>
             ) : (
               // 透明な余白(p-2)でタップ判定を広げる
@@ -347,8 +358,17 @@ function MapInnerWithMode({
         )}
 
         {userLocation && (
-          <AdvancedMarker position={{ lat: userLocation.lat, lng: userLocation.lng }}>
-            <div className="gps-marker" />
+          <AdvancedMarker position={{ lat: userLocation.lat, lng: userLocation.lng }} zIndex={500}>
+            {userAvatarUrl ? (
+              <div className="relative w-16 h-16 flex items-center justify-center">
+                <div className="avatar-pulse-ring" />
+                <div className="relative z-10 w-14 h-14 rounded-2xl overflow-hidden border-[3px] border-blue-500 shadow-lg bg-white">
+                  <img src={userAvatarUrl} alt="あなた" className="w-full h-full object-cover" />
+                </div>
+              </div>
+            ) : (
+              <div className="gps-marker" />
+            )}
           </AdvancedMarker>
         )}
 
@@ -357,7 +377,7 @@ function MapInnerWithMode({
           return (
             <AdvancedMarker key={member.user_id} position={{ lat: member.lat, lng: member.lng }}>
               <div className="flex flex-col items-center" style={{ opacity }}>
-                <div className={`w-10 h-10 rounded-full ${getMemberColor(member.user_id)} flex items-center justify-center text-white text-sm font-bold shadow-md border-2 border-white overflow-hidden`}>
+                <div className={`w-16 h-16 rounded-2xl ${getMemberColor(member.user_id)} flex items-center justify-center text-white text-2xl font-bold shadow-lg border-[3px] border-white overflow-hidden`}>
                   {member.avatar_url ? (
                     <img src={member.avatar_url} alt={member.nickname} className="w-full h-full object-cover" />
                   ) : (

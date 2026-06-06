@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useMemo } from 'react'
 import { useParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
-import { supabase, Pin, MemberLocation, getUserId, addStoredGroup } from '@/lib/supabase'
+import { supabase, Pin, MemberLocation, getUserId, addStoredGroup, getStoredGroups, StoredGroup } from '@/lib/supabase'
+import MapFilterPanel, { PinCategory, FILTER_CATEGORIES } from '@/components/MapFilterPanel'
 import BottomSheet from '@/components/BottomSheet'
 import Timeline from '@/components/Timeline'
 import CountdownWidget from '@/components/CountdownWidget'
@@ -24,6 +25,13 @@ export default function MapPage() {
   const groupId = params.groupId as string
 
   const [pins, setPins] = useState<Pin[]>([])
+  // フィルター（左上）：複数グループ表示 + カテゴリー別表示
+  const [storedGroups, setStoredGroups] = useState<StoredGroup[]>([])
+  const [crossGroupPins, setCrossGroupPins] = useState<Pin[]>([])
+  const [visibleGroupIds, setVisibleGroupIds] = useState<string[]>(() => groupId ? [groupId] : [])
+  const [visibleCategories, setVisibleCategories] = useState<PinCategory[]>(
+    () => FILTER_CATEGORIES.map(c => c.id)
+  )
   const [selectedPin, setSelectedPin] = useState<Partial<Pin> | null>(null)
   const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false)
   const [tempLocation, setTempLocation] = useState<{lat: number, lng: number} | null>(null)
@@ -56,9 +64,9 @@ export default function MapPage() {
     if (savedTheme) setMapTheme(savedTheme)
     // このマップを参加一覧に追加（共有リンク経由でも記録）
     if (groupId) {
-      supabase.from('groups').select('id, name, color').eq('id', groupId).single()
+      supabase.from('groups').select('*').eq('id', groupId).single()
         .then(({ data }) => {
-          if (data) addStoredGroup({ id: data.id, name: data.name, color: data.color })
+          if (data) addStoredGroup({ id: data.id, name: data.name, color: data.color, photo_url: data.photo_url ?? null })
         })
     }
   }, [])
@@ -190,6 +198,46 @@ export default function MapPage() {
     return () => { supabase.removeChannel(channel) }
   }, [groupId])
 
+  // 参加グループ一覧を読み込み（フィルター用）。現在のグループは必ず表示対象に含める
+  useEffect(() => {
+    setStoredGroups(getStoredGroups())
+    if (groupId) {
+      setVisibleGroupIds(prev => prev.includes(groupId) ? prev : [...prev, groupId])
+    }
+  }, [groupId])
+
+  // 現在のグループ以外で選択中のグループのピンを取得（読み取り専用表示）
+  useEffect(() => {
+    const others = visibleGroupIds.filter(id => id !== groupId)
+    if (others.length === 0) {
+      setCrossGroupPins([])
+      return
+    }
+    let cancelled = false
+    supabase.from('pins').select('*').in('group_id', others).then(({ data }) => {
+      if (!cancelled && data) setCrossGroupPins(data as Pin[])
+    })
+    return () => { cancelled = true }
+  }, [visibleGroupIds, groupId])
+
+  const toggleGroup = (id: string) => {
+    setVisibleGroupIds(prev => prev.includes(id) ? prev.filter(g => g !== id) : [...prev, id])
+  }
+  const toggleCategory = (c: PinCategory) => {
+    setVisibleCategories(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c])
+  }
+
+  // マップに表示するピン：選択グループ + カテゴリーで絞り込み
+  const displayPins = useMemo(() => {
+    const all = [...pins, ...crossGroupPins]
+    return all.filter(p => {
+      if (!visibleGroupIds.includes(p.group_id)) return false
+      // 「ここにいるよ」ピンは現在のグループのみ常時表示
+      if (p.category === 'Here') return p.group_id === groupId
+      return visibleCategories.includes(p.category as PinCategory)
+    })
+  }, [pins, crossGroupPins, visibleGroupIds, visibleCategories, groupId])
+
   const handleAddPin = (lat: number, lng: number) => {
     setPopupPin(null)
     setTempLocation({ lat, lng })
@@ -296,20 +344,29 @@ export default function MapPage() {
 
       {/* マップ画面 */}
       <div className={`flex-1 flex flex-col min-h-0 ${activeTab === 'map' ? 'flex' : 'hidden'}`}>
-        <CountdownWidget pins={pins} onPinSelect={handleShowPopup} />
         <div className="relative flex-1 min-h-0">
           <MapComponent
-            pins={pins}
+            pins={displayPins}
             onAddPin={handleAddPin}
             onOpenSheet={handleOpenSheet}
             popupPin={popupPin}
             onClosePopup={() => setPopupPin(null)}
             centerLocation={centerLocation}
             userLocation={userLocation}
+            userAvatarUrl={avatarUrl}
             memberLocations={memberLocations}
             searchCircle={searchCircle}
             mapTheme={mapTheme}
           />
+          <MapFilterPanel
+            groups={storedGroups}
+            currentGroupId={groupId}
+            visibleGroupIds={visibleGroupIds}
+            onToggleGroup={toggleGroup}
+            visibleCategories={visibleCategories}
+            onToggleCategory={toggleCategory}
+          />
+          <CountdownWidget pins={pins} onPinSelect={handleShowPopup} />
           <HereWidget pins={pins} onSelectPin={handleShowPopup} />
           {aiSelect && (
             <AiSearchOverlay

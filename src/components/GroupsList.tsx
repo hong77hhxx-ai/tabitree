@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation'
 import {
   supabase, Group, GROUP_COLORS,
   getStoredGroups, addStoredGroup, removeStoredGroup, StoredGroup,
+  uploadGroupPhoto, updateStoredGroupPhoto,
 } from '@/lib/supabase'
-import { MapPin, Plus, ArrowRight, ChevronRight, Trash2, X, Compass, Link2, Layers } from 'lucide-react'
+import { MapPin, Plus, ArrowRight, ChevronRight, Trash2, X, Compass, Link2, Layers, Camera, Loader2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { formatDistanceToNow } from 'date-fns'
 import { ja } from 'date-fns/locale'
@@ -32,10 +33,36 @@ export default function GroupsList({ currentGroupId }: GroupsListProps) {
   const [isJoining, setIsJoining] = useState(false)
 
   const [errorMsg, setErrorMsg] = useState('')
+  const [uploadingId, setUploadingId] = useState<string | null>(null)
 
   useEffect(() => {
-    setGroups(getStoredGroups())
+    const stored = getStoredGroups()
+    setGroups(stored)
+    // DBから最新情報（写真など）を同期
+    const ids = stored.map(g => g.id)
+    if (ids.length === 0) return
+    supabase.from('groups').select('*').in('id', ids).then(({ data }) => {
+      if (!data) return
+      ;(data as Group[]).forEach(g => {
+        addStoredGroup({ id: g.id, name: g.name, color: g.color, photo_url: g.photo_url ?? null })
+      })
+      setGroups(getStoredGroups())
+    })
   }, [])
+
+  const handleGroupPhoto = async (e: React.ChangeEvent<HTMLInputElement>, groupId: string) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setUploadingId(groupId)
+    const url = await uploadGroupPhoto(file, groupId)
+    if (url) {
+      await supabase.from('groups').update({ photo_url: url }).eq('id', groupId)
+      updateStoredGroupPhoto(groupId, url)
+      setGroups(getStoredGroups())
+    }
+    setUploadingId(null)
+  }
 
   const handleCreateGroup = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -149,18 +176,36 @@ export default function GroupsList({ currentGroupId }: GroupsListProps) {
                   {/* カラーバー */}
                   <div className="w-2 self-stretch flex-shrink-0" style={{ backgroundColor: g.color || '#88D8C0' }} />
                   <div className="flex items-center gap-3 flex-1 min-w-0 p-4">
-                    <div
-                      className="w-11 h-11 rounded-xl flex-shrink-0 flex items-center justify-center relative"
+                    <label
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-11 h-11 rounded-xl flex-shrink-0 flex items-center justify-center relative overflow-hidden cursor-pointer group/photo"
                       style={{ backgroundColor: g.color || '#88D8C0' }}
                     >
-                      <MapPin size={20} className="text-white" />
+                      {g.photo_url ? (
+                        <img src={g.photo_url} alt={g.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <MapPin size={20} className="text-white" />
+                      )}
+                      {/* 写真変更オーバーレイ */}
+                      <span className="absolute inset-0 bg-black/35 flex items-center justify-center opacity-0 group-hover/photo:opacity-100 active:opacity-100 transition-opacity">
+                        {uploadingId === g.id
+                          ? <Loader2 size={16} className="text-white animate-spin" />
+                          : <Camera size={16} className="text-white" />}
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => handleGroupPhoto(e, g.id)}
+                        disabled={uploadingId === g.id}
+                      />
                       {isCurrent && (
                         <span className="absolute -top-1.5 -right-1.5 flex h-3.5 w-3.5">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
                           <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-teal-500 border-2 border-white"></span>
                         </span>
                       )}
-                    </div>
+                    </label>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-gray-800 truncate">{g.name}</span>
