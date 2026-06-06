@@ -12,6 +12,7 @@ import BottomNav from '@/components/BottomNav'
 import HereWidget from '@/components/HereWidget'
 import Settings, { MapTheme } from '@/components/Settings'
 import AiSearchOverlay from '@/components/AiSearchOverlay'
+import GroupsList from '@/components/GroupsList'
 
 const MapComponent = dynamic(() => import('@/components/Map'), { ssr: false })
 
@@ -28,7 +29,7 @@ export default function MapPage() {
   const [tempLocation, setTempLocation] = useState<{lat: number, lng: number} | null>(null)
   const [centerLocation, setCenterLocation] = useState<{lat: number, lng: number} | null>(null)
   const [popupPin, setPopupPin] = useState<Pin | null>(null)
-  const [activeTab, setActiveTab] = useState<'map' | 'timeline' | 'settings'>('map')
+  const [activeTab, setActiveTab] = useState<'map' | 'groups' | 'timeline' | 'settings'>('map')
   const [mapTheme, setMapTheme] = useState<MapTheme>('default')
   const [searchCircle, setSearchCircle] = useState<{lat: number, lng: number, radiusKm: number} | null>(null)
   const [aiSelect, setAiSelect] = useState<{lat: number, lng: number, category: string} | null>(null)
@@ -329,6 +330,11 @@ export default function MapPage() {
           onSelectPin={handleShowPopup}
           onDeletePin={handleDeletePin}
         />
+      </div>
+
+      {/* グループ画面 */}
+      <div className={`flex-1 min-h-0 overflow-hidden ${activeTab === 'groups' ? 'flex flex-col' : 'hidden'}`}>
+        <GroupsList currentGroupId={groupId} />
       </div>
 
       {/* 設定画面 */}
