@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import {
   APIProvider,
   Map,
@@ -54,6 +54,21 @@ const getLocationFreshness = (updatedAt: string) => {
   if (mins < 5)  return { opacity: 0.4,  label: `${Math.floor(mins)}分前` }
   return           { opacity: 0.2,  label: `${Math.floor(mins)}分前` }
 }
+
+// 2点間の距離(m)を返す（Haversine）
+const haversineDistance = (a: { lat: number, lng: number }, b: { lat: number, lng: number }) => {
+  const R = 6371000
+  const toRad = (deg: number) => deg * Math.PI / 180
+  const dLat = toRad(b.lat - a.lat)
+  const dLng = toRad(b.lng - a.lng)
+  const sinLat = Math.sin(dLat / 2)
+  const sinLng = Math.sin(dLng / 2)
+  const h = sinLat * sinLat + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * sinLng * sinLng
+  return 2 * R * Math.asin(Math.sqrt(h))
+}
+
+// 50m以内なら「同じ位置」と見なす
+const COLOCATION_THRESHOLD_M = 50
 
 const getCategoryIcon = (category: string, size = 20) => {
   switch (category) {
@@ -380,27 +395,97 @@ function MapInnerWithMode({
           </AdvancedMarker>
         )}
 
-        {userLocation && (
-          <AdvancedMarker position={{ lat: userLocation.lat, lng: userLocation.lng }} zIndex={500}>
-            {userAvatarUrl ? (
-              <div className="relative w-16 h-16 flex items-center justify-center">
-                <div className="avatar-pulse-ring" />
-                <div className="relative z-10 w-14 h-14 rounded-2xl overflow-hidden border-[3px] border-blue-500 shadow-lg bg-white">
-                  <img src={userAvatarUrl} alt="あなた" className="w-full h-full object-cover" />
-                </div>
-              </div>
-            ) : (
-              <div className="gps-marker" />
-            )}
-          </AdvancedMarker>
-        )}
+        {/* === 自分のマーカー（同じ場所にいるメンバーをミニアイコンで表示） === */}
+        {userLocation && (() => {
+          // 自分と同じ位置にいるメンバーを抽出
+          const nearbyMembers = memberLocations.filter(m =>
+            haversineDistance(userLocation, { lat: m.lat, lng: m.lng }) < COLOCATION_THRESHOLD_M
+          )
+          const MAX_DOTS = 3
+          const visibleDots = nearbyMembers.slice(0, MAX_DOTS)
+          const overflowCount = nearbyMembers.length - MAX_DOTS
 
-        {memberLocations.map(member => {
+          return (
+            <AdvancedMarker position={{ lat: userLocation.lat, lng: userLocation.lng }} zIndex={500}>
+              {userAvatarUrl ? (
+                <div className="relative w-16 h-16 flex items-center justify-center">
+                  <div className="avatar-pulse-ring" />
+                  <div className="relative z-10 w-14 h-14 rounded-2xl overflow-hidden border-[3px] border-blue-500 shadow-lg bg-white">
+                    <img src={userAvatarUrl} alt="あなた" className="w-full h-full object-cover" />
+                  </div>
+                  {/* 同じ位置のメンバーをミニドットで右下に重ねる */}
+                  {nearbyMembers.length > 0 && (
+                    <div className="absolute -bottom-1 -right-1 z-20 flex items-end" style={{ gap: '2px' }}>
+                      {visibleDots.map((m, i) => (
+                        <div
+                          key={m.user_id}
+                          className={`w-5 h-5 rounded-full border-2 border-white shadow-md overflow-hidden ${getMemberColor(m.user_id)} flex items-center justify-center`}
+                          style={{ zIndex: 20 + i }}
+                          title={m.nickname}
+                        >
+                          {m.avatar_url ? (
+                            <img src={m.avatar_url} alt={m.nickname} className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-[8px] font-bold text-white leading-none">{m.nickname.charAt(0).toUpperCase()}</span>
+                          )}
+                        </div>
+                      ))}
+                      {overflowCount > 0 && (
+                        <div
+                          className="w-5 h-5 rounded-full border-2 border-white shadow-md bg-gray-500 flex items-center justify-center"
+                          style={{ zIndex: 20 + MAX_DOTS }}
+                        >
+                          <span className="text-[7px] font-bold text-white leading-none">+{overflowCount}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="relative">
+                  <div className="gps-marker" />
+                  {/* アバター未設定でも同じ位置のメンバードットを表示 */}
+                  {nearbyMembers.length > 0 && (
+                    <div className="absolute -bottom-1 -right-1 z-20 flex items-end" style={{ gap: '2px' }}>
+                      {visibleDots.map((m, i) => (
+                        <div
+                          key={m.user_id}
+                          className={`w-5 h-5 rounded-full border-2 border-white shadow-md overflow-hidden ${getMemberColor(m.user_id)} flex items-center justify-center`}
+                          style={{ zIndex: 20 + i }}
+                          title={m.nickname}
+                        >
+                          {m.avatar_url ? (
+                            <img src={m.avatar_url} alt={m.nickname} className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-[8px] font-bold text-white leading-none">{m.nickname.charAt(0).toUpperCase()}</span>
+                          )}
+                        </div>
+                      ))}
+                      {overflowCount > 0 && (
+                        <div
+                          className="w-5 h-5 rounded-full border-2 border-white shadow-md bg-gray-500 flex items-center justify-center"
+                          style={{ zIndex: 20 + MAX_DOTS }}
+                        >
+                          <span className="text-[7px] font-bold text-white leading-none">+{overflowCount}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </AdvancedMarker>
+          )
+        })()}
+
+        {/* === 他メンバーのマーカー（自分と同じ位置のメンバーはスキップ） === */}
+        {memberLocations
+          .filter(m => !userLocation || haversineDistance(userLocation, { lat: m.lat, lng: m.lng }) >= COLOCATION_THRESHOLD_M)
+          .map(member => {
           const { opacity, label } = getLocationFreshness(member.updated_at)
           return (
             <AdvancedMarker key={member.user_id} position={{ lat: member.lat, lng: member.lng }}>
               <div className="flex flex-col items-center" style={{ opacity }}>
-                <div className={`w-16 h-16 rounded-2xl ${getMemberColor(member.user_id)} flex items-center justify-center text-white text-2xl font-bold shadow-lg border-[3px] border-white overflow-hidden`}>
+                <div className={`w-14 h-14 rounded-2xl ${getMemberColor(member.user_id)} flex items-center justify-center text-white text-xl font-bold shadow-lg border-[3px] border-white overflow-hidden`}>
                   {member.avatar_url ? (
                     <img src={member.avatar_url} alt={member.nickname} className="w-full h-full object-cover" />
                   ) : (
