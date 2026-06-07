@@ -77,10 +77,19 @@ ALTER TABLE public.routes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.member_locations ENABLE ROW LEVEL SECURITY;
 
 -- Create policies (Allow all operations for prototype sharing)
+DROP POLICY IF EXISTS "Allow all operations for groups" ON public.groups;
 CREATE POLICY "Allow all operations for groups" ON public.groups FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow all operations for pins" ON public.pins;
 CREATE POLICY "Allow all operations for pins" ON public.pins FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow all operations for group_members" ON public.group_members;
 CREATE POLICY "Allow all operations for group_members" ON public.group_members FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow all operations for routes" ON public.routes;
 CREATE POLICY "Allow all operations for routes" ON public.routes FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow all operations for member_locations" ON public.member_locations;
 CREATE POLICY "Allow all operations for member_locations" ON public.member_locations FOR ALL USING (true) WITH CHECK (true);
 
 -- Enable Realtime for pins and member_locations
@@ -97,7 +106,14 @@ VALUES ('pin-photos', 'pin-photos', true)
 ON CONFLICT (id) DO NOTHING;
 
 -- Storage policies
+DROP POLICY IF EXISTS "Allow public select on pin-photos" ON storage.objects;
 CREATE POLICY "Allow public select on pin-photos" ON storage.objects FOR SELECT USING (bucket_id = 'pin-photos');
+
+DROP POLICY IF EXISTS "Allow public insert on pin-photos" ON storage.objects;
 CREATE POLICY "Allow public insert on pin-photos" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'pin-photos');
+
+DROP POLICY IF EXISTS "Allow public update on pin-photos" ON storage.objects;
 CREATE POLICY "Allow public update on pin-photos" ON storage.objects FOR UPDATE USING (bucket_id = 'pin-photos') WITH CHECK (bucket_id = 'pin-photos');
+
+DROP POLICY IF EXISTS "Allow public delete on pin-photos" ON storage.objects;
 CREATE POLICY "Allow public delete on pin-photos" ON storage.objects FOR DELETE USING (bucket_id = 'pin-photos');
