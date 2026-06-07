@@ -1,36 +1,59 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TabiTree - みんなで作る、旅行マップ
 
-## Getting Started
+TabiTree（タビツリー）は、リアルタイムで友達と位置情報を共有しながら、旅行のピン（スポット）を追加し、ルートを最適化できるWebアプリケーションです。
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 🚀 セットアップ手順（接続と反映）
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+本アプリを実際に動かす（接続・反映する）には、**Supabase（データベース）** と **Google Maps API（地図表示）** の設定が必要です。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 1. データベース（Supabase）の準備
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. **Supabaseプロジェクトの作成**:
+   [Supabase](https://supabase.com/) にサインインし、新しいプロジェクトを作成します。
+2. **データベーススキーマの適用**:
+   - Supabase管理画面の左メニューから **SQL Editor** を開きます。
+   - `New query` を作成し、プロジェクト内にある [supabase/schema.sql](file:///C:/Users/seya/.gemini/antigravity/scratch/tabitree/supabase/schema.sql) の内容をすべて貼り付けて、**Run** を実行します。
+   - これにより、必要なテーブル（`groups`, `pins`, `group_members`, `routes`, `member_locations`）、RLSポリシー、リアルタイム同期（Realtime）、および画像アップロード用のストレージバケット（`pin-photos`）が一括で作成されます。
+3. **APIキーの取得**:
+   - Supabase管理画面の **Settings > API** を開きます。
+   - `Project URL` と `anon public` キーの値をコピーしておきます。
 
-## Learn More
+### 2. Google Maps API の準備
 
-To learn more about Next.js, take a look at the following resources:
+1. **Google Cloud Console でのプロジェクト設定**:
+   [Google Cloud Console](https://console.cloud.google.com/) でプロジェクトを作成します。
+2. **APIの有効化**:
+   ライブラリから以下のAPIを有効化してください：
+   - **Maps JavaScript API**
+   - **Directions API** (ルートの算出用)
+3. **APIキーの作成と制限**:
+   - `認証情報` からAPIキーを作成します。
+   - 本番で公開する場合は、APIキーの制限を設定することを推奨します。
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🛠️ ローカル環境での起動
 
-## Deploy on Vercel
+1. **環境変数の設定**:
+   - プロジェクトのルートディレクトリにある `.env.local.example` をコピーして、新規に `.env.local` という名前のファイルを作成します。
+   - コピーした値（Supabase URL、Anonキー、Google Maps APIキー）を自分のキーに書き換えます。
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+   NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSy...
+   ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+2. **依存パッケージのインストール**:
+   ```bash
+   npm install
+   ```
+
+3. **開発サーバーの起動**:
+   ```bash
+   npm run dev
+   ```
+
+   起動後、ブラウザで [http://localhost:3000](http://localhost:3000) にアクセスします。
