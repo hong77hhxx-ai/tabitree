@@ -16,6 +16,7 @@ import AiSearchOverlay from '@/components/AiSearchOverlay'
 import GroupsList from '@/components/GroupsList'
 import RoutePlanner from '@/components/RoutePlanner'
 import PlaceSearch from '@/components/PlaceSearch'
+import MemoryView from '@/components/MemoryView'
 import { RouteResult, computeRouteForOrder } from '@/lib/route'
 import { PlaceResult } from '@/lib/places'
 import { Route as RouteIcon, Search } from 'lucide-react'
@@ -81,6 +82,8 @@ export default function MapPage() {
   const [tempLocation, setTempLocation] = useState<{lat: number, lng: number} | null>(null)
   const [centerLocation, setCenterLocation] = useState<{lat: number, lng: number} | null>(null)
   const [popupPin, setPopupPin] = useState<Pin | null>(null)
+  const [memoryPin, setMemoryPin] = useState<Pin | null>(null)
+  const [confirmVisitPin, setConfirmVisitPin] = useState<Pin | null>(null)
   const [activeTab, setActiveTab] = useState<'map' | 'groups' | 'timeline' | 'settings'>('map')
   const [themeColor, setThemeColor] = useState<ThemeColor>('default')
   const [mapStyle, setMapStyle] = useState<MapStyle>('default')
@@ -368,6 +371,32 @@ export default function MapPage() {
     setSelectedPin(pin)
     setIsBottomSheetOpen(true)
     setPopupPin(null)
+    setMemoryPin(null)
+  }
+
+  // 思い出（Visited）ピンの一覧（スワイプ切替用）
+  const memories = useMemo(
+    () => pins
+      .filter(p => p.status === 'Visited' && p.category !== 'Here')
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
+    [pins]
+  )
+
+  // ピンのタップ：思い出（Visited）は専用ビュー、それ以外は編集シート
+  const handleTapPin = (pin: Pin) => {
+    if (pin.status === 'Visited') {
+      setPopupPin(null)
+      setMemoryPin(pin)
+      setCenterLocation({ lat: pin.lat, lng: pin.lng })
+    } else {
+      handleOpenSheet(pin)
+    }
+  }
+
+  // 思い出ビューのスワイプ：別の思い出に切替＋マップを該当ピンへ移動
+  const handleMemoryChange = (pin: Pin) => {
+    setMemoryPin(pin)
+    setCenterLocation({ lat: pin.lat, lng: pin.lng })
   }
 
   // ワンタップで「行きたい」→「思い出」に変更
@@ -376,6 +405,13 @@ export default function MapPage() {
     setPins(prev => prev.map(p => p.id === pin.id ? { ...p, status: 'Visited' } : p))
     const { error } = await supabase.from('pins').update({ status: 'Visited' }).eq('id', pin.id)
     if (error) console.error(error)
+  }
+
+  // 「行きたい」ピンの長押し → 思い出に変更の確認ダイアログを表示
+  const handleLongPressPin = (pin: Pin) => {
+    if (pin.status === 'Visited' || pin.category === 'Here') return
+    setPopupPin(null)
+    setConfirmVisitPin(pin)
   }
 
   // AIセレクト開始：シートを閉じてマップ上にオーバーレイ表示
@@ -503,6 +539,8 @@ export default function MapPage() {
             pins={displayPins}
             onAddPin={handleAddPin}
             onOpenSheet={handleOpenSheet}
+            onTapPin={handleTapPin}
+            onLongPressPin={handleLongPressPin}
             popupPin={popupPin}
             onClosePopup={() => setPopupPin(null)}
             centerLocation={centerLocation}
@@ -641,6 +679,40 @@ export default function MapPage() {
         onSearchRadiusChange={setSearchCircle}
         onStartAiSelect={handleStartAiSelect}
       />
+
+      {/* 思い出専用ビュー */}
+      <MemoryView
+        pin={memoryPin}
+        memories={memories}
+        onClose={() => setMemoryPin(null)}
+        onEdit={handleOpenSheet}
+        onChange={handleMemoryChange}
+      />
+
+      {/* 「思い出に変更しますか？」確認ダイアログ */}
+      {confirmVisitPin && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-6">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setConfirmVisitPin(null)} />
+          <div className="relative bg-[var(--surface)] rounded-3xl shadow-2xl w-full max-w-xs p-6 text-center">
+            <div className="text-base font-bold text-[var(--text-strong)] mb-1">思い出に変更しますか？</div>
+            <div className="text-sm text-[var(--text-muted)] mb-5 truncate">{confirmVisitPin.title || '無題のスポット'}</div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmVisitPin(null)}
+                className="flex-1 py-3 rounded-2xl font-bold text-[var(--text-strong)] bg-[var(--surface-sunken)] border border-[var(--border-soft)] active:opacity-80"
+              >
+                いいえ
+              </button>
+              <button
+                onClick={() => { handleQuickVisit(confirmVisitPin); setConfirmVisitPin(null) }}
+                className="flex-1 py-3 rounded-2xl font-bold text-white bg-gradient-to-r from-orange-400 to-amber-500 shadow-md active:scale-[0.98]"
+              >
+                はい
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
     </APIProvider>
   )

@@ -408,7 +408,7 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete, on
                   className="w-full py-4 bg-gradient-to-r from-orange-400 to-amber-500 text-white rounded-xl font-bold text-lg shadow-md hover:shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2"
                 >
                   <CheckCircle size={24} />
-                  思い出にする（訪問を記録）
+                  思い出にする
                 </button>
               )}
 

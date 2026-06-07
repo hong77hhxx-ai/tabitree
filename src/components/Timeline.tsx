@@ -5,7 +5,7 @@ import { googleMapsDirUrl } from '@/lib/route'
 import { format, parseISO, differenceInDays, differenceInHours } from 'date-fns'
 import { formatDistanceToNow } from 'date-fns'
 import { ja } from 'date-fns/locale'
-import { MapPin, Utensils, Bed, Camera, Droplets, Clock, Trash2, ImageIcon, Route as RouteIcon, Footprints, Car, ChevronRight, Navigation } from 'lucide-react'
+import { MapPin, Utensils, Bed, Camera, Droplets, Clock, Trash2, ImageIcon, Route as RouteIcon, Footprints, Car, ChevronRight, Navigation, Settings2, Check, X } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
 type TimelineProps = {
@@ -20,6 +20,8 @@ export default function Timeline({ pins, groupId, onSelectPin, onDeletePin, onSe
   const [activeTab, setActiveTab] = useState<'recent' | 'history' | 'route'>('recent')
   const [routes, setRoutes] = useState<SavedRoute[]>([])
   const [routesLoading, setRoutesLoading] = useState(false)
+  const [editingRouteId, setEditingRouteId] = useState<string | null>(null)
+  const [routeNameDraft, setRouteNameDraft] = useState('')
 
   useEffect(() => {
     if (!groupId) return
@@ -37,6 +39,21 @@ export default function Timeline({ pins, groupId, onSelectPin, onDeletePin, onSe
     if (!window.confirm('このルートを削除しますか？')) return
     await supabase.from('routes').delete().eq('id', id)
     setRoutes(prev => prev.filter(r => r.id !== id))
+  }
+
+  const startEditRoute = (e: React.MouseEvent, route: SavedRoute) => {
+    e.stopPropagation()
+    setEditingRouteId(route.id)
+    setRouteNameDraft(route.name)
+  }
+
+  const handleRenameRoute = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation()
+    const name = routeNameDraft.trim()
+    if (!name) { setEditingRouteId(null); return }
+    setRoutes(prev => prev.map(r => r.id === id ? { ...r, name } : r))
+    setEditingRouteId(null)
+    await supabase.from('routes').update({ name }).eq('id', id)
   }
 
   const recentPins = [...pins]
@@ -279,16 +296,50 @@ export default function Timeline({ pins, groupId, onSelectPin, onDeletePin, onSe
                       <div className="w-8 h-8 rounded-xl bg-[#dc2626]/10 flex items-center justify-center flex-shrink-0">
                         <RouteIcon size={16} className="text-[#dc2626]" />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-bold text-[var(--text-strong)] text-base truncate">{route.name}</div>
-                      </div>
-                      <button
-                        onClick={e => handleDeleteRoute(e, route.id)}
-                        className="p-2 text-gray-300 hover:text-rose-500 active:text-rose-500 rounded-lg transition-all flex-shrink-0"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                      <ChevronRight size={18} className="text-[var(--text-muted)] flex-shrink-0" />
+                      {editingRouteId === route.id ? (
+                        <div className="flex-1 min-w-0 flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
+                          <input
+                            value={routeNameDraft}
+                            onChange={e => setRouteNameDraft(e.target.value)}
+                            autoFocus
+                            maxLength={60}
+                            className="flex-1 min-w-0 px-2.5 py-1.5 rounded-lg border border-[var(--border-soft)] bg-[var(--surface-sunken)] text-[var(--text-strong)] text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+                          />
+                          <button
+                            onClick={e => handleRenameRoute(e, route.id)}
+                            className="p-1.5 rounded-lg text-white flex-shrink-0"
+                            style={{ backgroundColor: 'var(--accent)' }}
+                          >
+                            <Check size={16} />
+                          </button>
+                          <button
+                            onClick={e => { e.stopPropagation(); setEditingRouteId(null) }}
+                            className="p-1.5 rounded-lg text-[var(--text-muted)] bg-[var(--surface-sunken)] flex-shrink-0"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-bold text-[var(--text-strong)] text-base truncate">{route.name}</div>
+                          </div>
+                          <button
+                            onClick={e => startEditRoute(e, route)}
+                            className="p-2 text-[var(--text-muted)] hover:text-[var(--accent)] active:text-[var(--accent)] rounded-lg transition-all flex-shrink-0"
+                            aria-label="ルート名を編集"
+                          >
+                            <Settings2 size={16} />
+                          </button>
+                          <button
+                            onClick={e => handleDeleteRoute(e, route.id)}
+                            className="p-2 text-gray-300 hover:text-rose-500 active:text-rose-500 rounded-lg transition-all flex-shrink-0"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                          <ChevronRight size={18} className="text-[var(--text-muted)] flex-shrink-0" />
+                        </>
+                      )}
                     </div>
 
                     {/* メタ情報 */}
