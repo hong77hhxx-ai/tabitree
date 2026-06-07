@@ -14,7 +14,7 @@ export type Pin = {
   category: 'Eat' | 'Stay' | 'Sightseeing' | 'Onsen' | 'Here'
   title: string
   notes: string | null
-  status: 'Planned' | 'Confirmed' | 'Visited'
+  status: 'Planned' | 'Visited'
   photo_url: string | null
   reactions: Record<string, number> | null
   scheduled_at: string | null

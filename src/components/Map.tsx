@@ -8,7 +8,8 @@ import {
   useMapsLibrary,
 } from '@vis.gl/react-google-maps'
 import { Pin, MemberLocation } from '@/lib/supabase'
-import { MapPin, Utensils, Bed, Camera, Droplets, Crosshair, ChevronRight, X, Users, ListFilter, ChevronDown, Route as RouteIcon } from 'lucide-react'
+import { PlaceResult, getPlaceById } from '@/lib/places'
+import { MapPin, Utensils, Bed, Camera, Droplets, Crosshair, ChevronRight, X, Users } from 'lucide-react'
 
 // AdvancedMarkerにはMap IDが必須。デモ用のDEMO_MAP_IDを利用
 const MAP_ID = process.env.NEXT_PUBLIC_GOOGLE_MAP_ID || 'DEMO_MAP_ID'
@@ -30,13 +31,19 @@ type MapComponentProps = {
   routeOrderedPinIds?: string[]
   showRoute?: boolean
   onToggleShowRoute?: () => void
+  // 地図上のPOI（飲食店など）をタップしてピン追加
+  onAddPlace?: (place: PlaceResult) => void
+  // ワンタップで「行きたい」→「思い出」に変更
+  onQuickVisit?: (pin: Pin) => void
+  // ピンが突き刺さるアニメーションを表示する位置
+  droppingPin?: { lat: number, lng: number } | null
 }
 
 const CATEGORY_LABEL: Record<string, string> = {
   Eat: '食べる', Stay: '泊まる', Sightseeing: '観光', Onsen: '温泉',
 }
 const STATUS_LABEL: Record<string, string> = {
-  Planned: '行きたい', Confirmed: '予約済', Visited: '行った',
+  Planned: '行きたい', Visited: '思い出',
 }
 
 const MEMBER_COLORS = [
@@ -176,27 +183,13 @@ function MapController({ centerLocation }: { centerLocation?: { lat: number, lng
 }
 
 export default function MapComponent(props: MapComponentProps) {
-  const [addMode, setAddMode] = useState(false)
-
-  const handleAddPin = (lat: number, lng: number) => {
-    props.onAddPin(lat, lng)
-    setAddMode(false)
-  }
-
   // APIProvider は親（page.tsx）で1つだけ提供するため、ここでは包まない
   return (
     <div className="w-full h-full flex-1 relative">
-      <MapInnerWithMode
-        {...props}
-        addMode={addMode}
-        onAddPin={handleAddPin}
-        onToggleAddMode={() => setAddMode(!addMode)}
-      />
+      <MapInnerWithMode {...props} />
     </div>
   )
 }
-
-type PinFilter = 'all' | 'plan' | 'memory'
 
 // このズーム以上に近づいたときだけ「行きたい」ピンの名前ラベルを表示
 const LABEL_ZOOM_THRESHOLD = 15
@@ -204,12 +197,11 @@ const LABEL_ZOOM_THRESHOLD = 15
 function MapInnerWithMode({
   pins, onAddPin, onOpenSheet, popupPin, onClosePopup,
   centerLocation, userLocation, userAvatarUrl, memberLocations = [], searchCircle, mapTheme = 'default',
-  routeDirections, routeOrderedPinIds = [], showRoute = true, onToggleShowRoute,
-  addMode, onToggleAddMode,
-}: MapComponentProps & { addMode: boolean, onToggleAddMode: () => void }) {
+  routeDirections, routeOrderedPinIds = [], showRoute = true, onAddPlace, onQuickVisit,
+  droppingPin,
+}: MapComponentProps) {
   const map = useMap()
-  const [filter, setFilter] = useState<PinFilter>('all')
-  const [filterOpen, setFilterOpen] = useState(false)
+  const placesLib = useMapsLibrary('places')
   // 近くまでズームしたときだけ「行きたい」ピンの名前を表示する
   const [labelsVisible, setLabelsVisible] = useState(false)
   const didInitialCenter = useRef(false)
@@ -222,6 +214,35 @@ function MapInnerWithMode({
       map.setZoom(14)
     }
   }, [map, userLocation])
+
+  // 長押しでピンを刺す（500ms押し続けたらその地点に追加）
+  const onAddPinRef = useRef(onAddPin)
+  onAddPinRef.current = onAddPin
+  useEffect(() => {
+    if (!map) return
+    let timer: ReturnType<typeof setTimeout> | null = null
+    let pressLatLng: { lat: number, lng: number } | null = null
+    const clear = () => { if (timer) { clearTimeout(timer); timer = null } }
+
+    const down = map.addListener('mousedown', (e: any) => {
+      const ll = e.latLng
+      if (!ll) return
+      pressLatLng = { lat: ll.lat(), lng: ll.lng() }
+      clear()
+      timer = setTimeout(() => {
+        if (pressLatLng) onAddPinRef.current(pressLatLng.lat, pressLatLng.lng)
+      }, 500)
+    })
+    const up = map.addListener('mouseup', clear)
+    const dragStart = map.addListener('dragstart', clear)
+
+    return () => {
+      clear()
+      down.remove()
+      up.remove()
+      dragStart.remove()
+    }
+  }, [map])
 
   // ダーク⇔ライトの切替時は colorScheme が変わりGoogleマップが再生成され、
   // 初期位置（東京）に戻ってしまう。再生成後に現在地へ寄せ直す。
@@ -255,94 +276,42 @@ function MapInnerWithMode({
     }
   }
 
-  const handleMapClick = (e: any) => {
-    if (addMode) {
-      const latLng = e.detail?.latLng
-      if (latLng) onAddPin(latLng.lat, latLng.lng)
-    } else {
-      onClosePopup?.()
+  const handleMapClick = async (e: any) => {
+    // 地図上のPOI（飲食店など）をタップ → 詳細を取得してピン追加フローへ
+    const placeId = e.detail?.placeId
+    if (placeId && placesLib && onAddPlace) {
+      e.stop?.() // Googleの既定情報ウィンドウを抑制
+      try {
+        const place = await getPlaceById(placeId, placesLib)
+        if (place) onAddPlace(place)
+      } catch (err) {
+        console.error('POI詳細の取得に失敗:', err)
+      }
+      return
     }
+    onClosePopup?.()
   }
 
+  // フィルター（グループ/カテゴリ/ステータス）は親で適用済み。
+  // ここでは期限切れの「今ここ」ピンだけ除外する。
   const visiblePins = pins.filter(pin => {
-    // 期限切れHereピンは常に非表示
     if (pin.category === 'Here' && pin.scheduled_at) {
       if (new Date(pin.scheduled_at) <= new Date()) return false
     }
-    // フィルター適用（Hereピンはフィルター対象外で常に表示）
-    if (pin.category === 'Here') return true
-    if (filter === 'plan') return pin.status === 'Planned' || pin.status === 'Confirmed'
-    if (filter === 'memory') return pin.status === 'Visited'
     return true
   })
 
-  const FILTERS: { id: PinFilter, label: string }[] = [
-    { id: 'all', label: 'すべて' },
-    { id: 'plan', label: '予定' },
-    { id: 'memory', label: '思い出' },
-  ]
-
   return (
     <div className="w-full h-full relative">
-      {/* ルート表示トグル（左上・ルート計算後のみ表示。左上のフィルターボタンと被らないよう右にずらす） */}
-      {routeDirections && (
-        <button
-          onClick={() => onToggleShowRoute?.()}
-          className="absolute z-10 bg-white/95 backdrop-blur-md rounded-full shadow-lg border border-gray-100 pl-2.5 pr-3 py-2 flex items-center gap-1.5 active:scale-95 transition-all"
-          style={{ top: 'max(env(safe-area-inset-top, 0px) + 12px, 16px)', left: '60px' }}
-        >
-          <RouteIcon size={15} className={showRoute ? 'text-[#dc2626]' : 'text-gray-400'} />
-          <span className={`text-sm font-bold whitespace-nowrap ${showRoute ? 'text-gray-700' : 'text-gray-400'}`}>ルート</span>
-          <span className={`w-8 h-4 rounded-full relative transition-colors ${showRoute ? 'bg-[#dc2626]' : 'bg-gray-300'}`}>
-            <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${showRoute ? 'left-4' : 'left-0.5'}`} />
-          </span>
-        </button>
-      )}
-
-      {/* ピンフィルター（右上ドロップダウン） */}
-      <div
-        className="absolute right-4 z-10 flex flex-col items-end"
-        style={{ top: 'max(env(safe-area-inset-top, 0px) + 12px, 16px)' }}
-      >
-        <button
-          onClick={() => setFilterOpen(v => !v)}
-          className="bg-white/95 backdrop-blur-md rounded-full shadow-lg border border-gray-100 pl-3 pr-2.5 py-2 flex items-center gap-1.5 active:scale-95 transition-all"
-        >
-          <ListFilter size={15} className="text-[var(--color-primary)]" />
-          <span className="text-sm font-bold text-gray-700 whitespace-nowrap">
-            {FILTERS.find(f => f.id === filter)?.label}
-          </span>
-          <ChevronDown size={15} className={`text-gray-400 transition-transform ${filterOpen ? 'rotate-180' : ''}`} />
-        </button>
-
-        {filterOpen && (
-          <div className="mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden w-36">
-            {FILTERS.map(f => (
-              <button
-                key={f.id}
-                onClick={() => { setFilter(f.id); setFilterOpen(false) }}
-                className={`w-full text-left px-4 py-3 text-sm font-bold transition-colors ${
-                  filter === f.id
-                    ? 'bg-[var(--color-primary)]/10 text-teal-700'
-                    : 'text-gray-600 active:bg-gray-50'
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
       <Map
         mapId={MAP_ID}
         defaultCenter={{ lat: 35.6812, lng: 139.7671 }}
         defaultZoom={12}
         gestureHandling="greedy"
         disableDefaultUI={true}
-        clickableIcons={false}
+        clickableIcons={true}
         colorScheme={mapTheme === 'dark' ? 'DARK' : 'LIGHT'}
-        style={{ width: '100%', height: '100%', cursor: addMode ? 'crosshair' : 'grab' }}
+        style={{ width: '100%', height: '100%', cursor: 'grab' }}
         onClick={handleMapClick}
         onCameraChanged={(ev) => {
           const v = ev.detail.zoom >= LABEL_ZOOM_THRESHOLD
@@ -373,6 +342,18 @@ function MapInnerWithMode({
             </AdvancedMarker>
           )
         })}
+
+        {/* ピンが突き刺さるアニメーション */}
+        {droppingPin && (
+          <AdvancedMarker position={droppingPin} zIndex={2000}>
+            <div className="relative flex flex-col items-center pointer-events-none" style={{ transform: 'translateY(-50%)' }}>
+              <div className="pin-drop">
+                <MapPin size={46} className="text-white drop-shadow-lg" fill="var(--color-primary)" strokeWidth={1.5} />
+              </div>
+              <div className="absolute bottom-0 w-7 h-2 rounded-full bg-black/30 pin-impact" />
+            </div>
+          </AdvancedMarker>
+        )}
 
         {visiblePins.map(pin => (
           <AdvancedMarker
@@ -445,9 +426,7 @@ function MapInnerWithMode({
                   </span>
                   {popupPin.category !== 'Here' && (
                     <span className={`ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                      popupPin.status === 'Visited' ? 'bg-orange-100 text-orange-600' :
-                      popupPin.status === 'Confirmed' ? 'bg-emerald-100 text-emerald-600' :
-                      'bg-indigo-50 text-indigo-500'
+                      popupPin.status === 'Visited' ? 'bg-orange-100 text-orange-600' : 'bg-indigo-50 text-indigo-500'
                     }`}>
                       {STATUS_LABEL[popupPin.status] ?? popupPin.status}
                     </span>
@@ -456,6 +435,15 @@ function MapInnerWithMode({
                 <div className="font-bold text-[var(--text-strong)] text-sm truncate mb-2">{popupPin.title}</div>
                 {popupPin.notes && (
                   <div className="text-xs text-[var(--text-muted)] line-clamp-2 mb-2">{popupPin.notes}</div>
+                )}
+                {/* ワンタップで「行きたい」→「思い出」 */}
+                {popupPin.category !== 'Here' && popupPin.status !== 'Visited' && (
+                  <button
+                    onClick={() => onQuickVisit?.(popupPin)}
+                    className="w-full flex items-center justify-center gap-1 bg-gradient-to-r from-orange-400 to-amber-500 text-white text-xs font-bold py-2 rounded-xl transition-all mb-1.5 active:scale-[0.98]"
+                  >
+                    思い出にする
+                  </button>
                 )}
                 <button
                   onClick={() => onOpenSheet(popupPin)}
@@ -580,23 +568,6 @@ function MapInnerWithMode({
           )
         })}
       </Map>
-
-      {/* ピン追加モードのヒント */}
-      {addMode && (
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-20 bg-teal-600 text-white text-sm font-bold px-4 py-2 rounded-full shadow-lg whitespace-nowrap">
-          地図をタップしてスポットを追加
-        </div>
-      )}
-
-      {/* スポット追加ボタン */}
-      <button
-        onClick={onToggleAddMode}
-        className={`absolute bottom-24 right-4 p-3.5 rounded-full shadow-lg active:scale-95 transition-all z-10 border ${
-          addMode ? 'bg-teal-600 text-white border-teal-600' : 'bg-white text-teal-600 border-gray-100'
-        }`}
-      >
-        {addMode ? <X size={24} /> : <MapPin size={24} />}
-      </button>
 
       {/* 現在地ボタン */}
       <button

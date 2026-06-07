@@ -18,7 +18,7 @@ const CATEGORY_LABEL: Record<string, string> = {
   Eat: '食べる', Stay: '泊まる', Sightseeing: '観光', Onsen: '温泉', Here: '今ここ',
 }
 const STATUS_LABEL: Record<string, string> = {
-  Planned: '行きたい', Confirmed: '予約済', Visited: '行った',
+  Planned: '行きたい', Visited: '思い出',
 }
 const categoryIcon = (category: string, size = 16) => {
   switch (category) {

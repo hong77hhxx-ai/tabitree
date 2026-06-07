@@ -32,7 +32,7 @@ const HERE_DURATIONS = [
   { label: '今日中', hours: null },
 ]
 
-const STATUSES = ['Planned', 'Confirmed', 'Visited']
+const STATUSES = ['Planned', 'Visited']
 
 export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete, onSearchRadiusChange, onStartAiSelect }: BottomSheetProps) {
   const [formData, setFormData] = useState<Partial<Pin>>({})
@@ -127,10 +127,6 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete, on
     } else {
       alert('写真のアップロードに失敗しました。')
     }
-  }
-
-  const handleCheckIn = () => {
-    handleChange('status', 'Visited')
   }
 
   const handleNavigate = () => {
@@ -392,27 +388,27 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete, on
                     <button
                       key={status}
                       onClick={() => handleChange('status', status)}
-                      className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
+                      className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${
                         formData.status === status
                           ? 'bg-[var(--surface)] text-[var(--color-primary)] shadow-sm'
                           : 'text-[var(--text-muted)] hover:opacity-80'
                       }`}
                     >
-                      {status === 'Planned' ? '行きたい' : status === 'Confirmed' ? '予約済/確定' : '行った'}
+                      {status === 'Planned' ? '行きたい' : '思い出'}
                     </button>
                   ))}
                 </div>
               </div>
               )}
 
-              {/* チェックインボタン */}
-              {formData.status === 'Confirmed' && pin?.id && (
+              {/* ワンタップで思い出にする（行きたい → 思い出） */}
+              {formData.category !== 'Here' && formData.status === 'Planned' && (
                 <button
-                  onClick={handleCheckIn}
-                  className="w-full py-4 bg-gradient-to-r from-emerald-400 to-teal-500 text-white rounded-xl font-bold text-lg shadow-md hover:shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                  onClick={() => handleChange('status', 'Visited')}
+                  className="w-full py-4 bg-gradient-to-r from-orange-400 to-amber-500 text-white rounded-xl font-bold text-lg shadow-md hover:shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2"
                 >
                   <CheckCircle size={24} />
-                  チェックイン✨ (訪問を記録)
+                  思い出にする（訪問を記録）
                 </button>
               )}
 

@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useMemo } from 'react'
 import { useParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { supabase, Pin, MemberLocation, getUserId, addStoredGroup, getStoredGroups, StoredGroup, upsertGroupMember, SavedRoute } from '@/lib/supabase'
-import MapFilterPanel, { PinCategory, FILTER_CATEGORIES } from '@/components/MapFilterPanel'
+import MapFilterPanel, { PinCategory, FILTER_CATEGORIES, StatusFilter } from '@/components/MapFilterPanel'
 import BottomSheet from '@/components/BottomSheet'
 import Timeline from '@/components/Timeline'
 import CountdownWidget from '@/components/CountdownWidget'
@@ -15,8 +15,10 @@ import Settings, { ThemeColor, MapStyle } from '@/components/Settings'
 import AiSearchOverlay from '@/components/AiSearchOverlay'
 import GroupsList from '@/components/GroupsList'
 import RoutePlanner from '@/components/RoutePlanner'
+import PlaceSearch from '@/components/PlaceSearch'
 import { RouteResult, computeRouteForOrder } from '@/lib/route'
-import { Route as RouteIcon } from 'lucide-react'
+import { PlaceResult } from '@/lib/places'
+import { Route as RouteIcon, Search } from 'lucide-react'
 import { APIProvider, useMap, useMapsLibrary } from '@vis.gl/react-google-maps'
 
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''
@@ -73,6 +75,7 @@ export default function MapPage() {
   const [visibleCategories, setVisibleCategories] = useState<PinCategory[]>(
     () => FILTER_CATEGORIES.map(c => c.id)
   )
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [selectedPin, setSelectedPin] = useState<Partial<Pin> | null>(null)
   const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false)
   const [tempLocation, setTempLocation] = useState<{lat: number, lng: number} | null>(null)
@@ -90,6 +93,9 @@ export default function MapPage() {
   const [showRoute, setShowRoute] = useState(true)
   const [isRoutePlannerOpen, setIsRoutePlannerOpen] = useState(false)
   const [pendingRoute, setPendingRoute] = useState<SavedRoute | null>(null)
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [droppingPin, setDroppingPin] = useState<{lat: number, lng: number} | null>(null)
+  const dropTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const [nickname, setNickname] = useState<string | null>(null)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
@@ -295,22 +301,61 @@ export default function MapPage() {
     setVisibleCategories(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c])
   }
 
-  // マップに表示するピン：選択グループ + カテゴリーで絞り込み
+  // マップに表示するピン：選択グループ + カテゴリー + 表示状態で絞り込み
   const displayPins = useMemo(() => {
     const all = [...pins, ...crossGroupPins]
     return all.filter(p => {
       if (!visibleGroupIds.includes(p.group_id)) return false
-      // 「ここにいるよ」ピンは現在のグループのみ常時表示
-      if (p.category === 'Here') return p.group_id === groupId
-      return visibleCategories.includes(p.category as PinCategory)
+      // 「ここにいるよ」ピンは現在のグループのみ・期限切れは除外
+      if (p.category === 'Here') {
+        if (p.group_id !== groupId) return false
+        if (p.scheduled_at && new Date(p.scheduled_at) <= new Date()) return false
+        return true
+      }
+      if (!visibleCategories.includes(p.category as PinCategory)) return false
+      // 表示状態フィルター（すべて / 予定 / 思い出）
+      if (statusFilter === 'plan') return p.status !== 'Visited'
+      if (statusFilter === 'memory') return p.status === 'Visited'
+      return true
     })
-  }, [pins, crossGroupPins, visibleGroupIds, visibleCategories, groupId])
+  }, [pins, crossGroupPins, visibleGroupIds, visibleCategories, statusFilter, groupId])
 
-  const handleAddPin = (lat: number, lng: number) => {
+  // ピンが突き刺さるアニメーションを見せてから、編集シートを開く
+  const animateDropThen = (lat: number, lng: number, after: () => void, pan: boolean) => {
     setPopupPin(null)
-    setTempLocation({ lat, lng })
-    setSelectedPin({ lat, lng })
-    setIsBottomSheetOpen(true)
+    setActiveTab('map')
+    if (pan) setCenterLocation({ lat, lng })
+    setDroppingPin({ lat, lng })
+    if (dropTimerRef.current) clearTimeout(dropTimerRef.current)
+    dropTimerRef.current = setTimeout(() => {
+      setDroppingPin(null)
+      after()
+    }, 650)
+  }
+
+  // 長押しでの追加：その地点は既に画面内なのでパンしない
+  const handleAddPin = (lat: number, lng: number) => {
+    animateDropThen(lat, lng, () => {
+      setTempLocation({ lat, lng })
+      setSelectedPin({ lat, lng })
+      setIsBottomSheetOpen(true)
+    }, false)
+  }
+
+  // 検索結果 / 地図POIから「ピンに追加」：名前・カテゴリ・住所を事前入力して編集シートを開く
+  const handleAddPlace = (place: PlaceResult) => {
+    animateDropThen(place.lat, place.lng, () => {
+      setTempLocation({ lat: place.lat, lng: place.lng })
+      setSelectedPin({
+        title: place.name,
+        category: place.category,
+        status: 'Planned',
+        notes: place.address || null,
+        lat: place.lat,
+        lng: place.lng,
+      })
+      setIsBottomSheetOpen(true)
+    }, true)
   }
 
   const handleShowPopup = (pin: Pin) => {
@@ -323,6 +368,14 @@ export default function MapPage() {
     setSelectedPin(pin)
     setIsBottomSheetOpen(true)
     setPopupPin(null)
+  }
+
+  // ワンタップで「行きたい」→「思い出」に変更
+  const handleQuickVisit = async (pin: Pin) => {
+    setPopupPin(null)
+    setPins(prev => prev.map(p => p.id === pin.id ? { ...p, status: 'Visited' } : p))
+    const { error } = await supabase.from('pins').update({ status: 'Visited' }).eq('id', pin.id)
+    if (error) console.error(error)
   }
 
   // AIセレクト開始：シートを閉じてマップ上にオーバーレイ表示
@@ -461,8 +514,21 @@ export default function MapPage() {
             routeDirections={routeDirections}
             routeOrderedPinIds={routeOrderedPinIds}
             showRoute={showRoute}
-            onToggleShowRoute={() => setShowRoute(v => !v)}
+            onAddPlace={handleAddPlace}
+            onQuickVisit={handleQuickVisit}
+            droppingPin={droppingPin}
           />
+
+          {/* スポット検索ボタン（右上） */}
+          <button
+            onClick={() => setIsSearchOpen(true)}
+            className="absolute right-4 z-10 bg-white/95 backdrop-blur-md rounded-full shadow-lg border border-gray-100 pl-3 pr-4 py-2 flex items-center gap-1.5 active:scale-95 transition-all"
+            style={{ top: 'max(env(safe-area-inset-top, 0px) + 12px, 16px)' }}
+          >
+            <Search size={16} className="text-[var(--color-primary)]" />
+            <span className="text-sm font-bold text-gray-700 whitespace-nowrap">検索</span>
+          </button>
+
           <MapFilterPanel
             groups={storedGroups}
             currentGroupId={groupId}
@@ -470,14 +536,19 @@ export default function MapPage() {
             onToggleGroup={toggleGroup}
             visibleCategories={visibleCategories}
             onToggleCategory={toggleCategory}
+            statusFilter={statusFilter}
+            onChangeStatus={setStatusFilter}
+            routeAvailable={routeDirections != null}
+            showRoute={showRoute}
+            onToggleShowRoute={() => setShowRoute(v => !v)}
           />
           <CountdownWidget pins={pins} onPinSelect={handleShowPopup} />
           <HereWidget pins={pins} onSelectPin={handleShowPopup} />
 
-          {/* ルート起動ボタン（右下・スポット追加/現在地ボタンの並び） */}
+          {/* ルート起動ボタン（右下・現在地ボタンの上） */}
           <button
             onClick={() => setIsRoutePlannerOpen(true)}
-            className="absolute right-4 bottom-[160px] bg-white p-3.5 rounded-full shadow-lg active:scale-95 transition-all z-10 border border-gray-100"
+            className="absolute right-4 bottom-24 bg-white p-3.5 rounded-full shadow-lg active:scale-95 transition-all z-10 border border-gray-100"
             aria-label="ルートを計画"
           >
             <RouteIcon size={24} className="text-[#dc2626]" />
@@ -494,6 +565,13 @@ export default function MapPage() {
           )}
         </div>
       </div>
+
+      {/* スポット検索（Google Places） */}
+      <PlaceSearch
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        onPick={handleAddPlace}
+      />
 
       {/* 保存済みルートの読み込み（再計算して地図表示） */}
       <RouteLoader pending={pendingRoute} pins={pins} onResult={handleRouteLoaded} />

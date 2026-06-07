@@ -52,8 +52,8 @@ export default function RoutePlanner({
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
-  // 選択候補：Planned / Confirmed のみ（Here と Visited は除外）
-  const candidates = pins.filter(p => p.category !== 'Here' && (p.status === 'Planned' || p.status === 'Confirmed'))
+  // 選択候補：「行きたい」（Here と 思い出/Visited は除外）
+  const candidates = pins.filter(p => p.category !== 'Here' && p.status !== 'Visited')
 
   const pinById = (id: string) => pins.find(p => p.id === id)
 
@@ -215,7 +215,7 @@ export default function RoutePlanner({
 
                 {candidates.length === 0 ? (
                   <div className="py-8 text-center text-sm text-[var(--text-muted)] bg-[var(--surface-sunken)] rounded-xl">
-                    「行きたい / 予約済」のピンがありません。
+                    「行きたい」のピンがありません。
                   </div>
                 ) : (
                   <div className="space-y-2 max-h-64 overflow-y-auto">

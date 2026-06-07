@@ -137,10 +137,8 @@ export default function Timeline({ pins, groupId, onSelectPin, onDeletePin, onSe
                     </div>
                   )}
                   <div className="flex items-center gap-2 mt-1 flex-wrap">
-                    <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
-                      pin.status === 'Confirmed' ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-50 text-indigo-600'
-                    }`}>
-                      {pin.status === 'Planned' ? '行きたい' : '予約済'}
+                    <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-600">
+                      行きたい
                     </span>
                     {pin.scheduled_at && (
                       <span className="text-xs bg-indigo-50 text-indigo-500 px-2.5 py-0.5 rounded-full flex items-center gap-1 font-bold">
@@ -174,7 +172,7 @@ export default function Timeline({ pins, groupId, onSelectPin, onDeletePin, onSe
           <div className="p-4 space-y-4">
             {visitedPins.length === 0 && (
               <div className="text-center text-[var(--text-muted)] py-20 text-sm leading-relaxed">
-                まだ思い出はありません。<br />チェックインして写真を残しましょう！
+                まだ思い出はありません。<br />「思い出にする」で写真を残しましょう！
               </div>
             )}
             {visitedPins.map(pin => (

@@ -169,6 +169,30 @@ input, textarea, [contenteditable] {
   animation: here-pulse 4s ease-in-out infinite;
 }
 
+/* ピンが上から落ちて突き刺さるアニメーション */
+@keyframes pin-drop {
+  0%   { transform: translateY(-240px) scale(0.7); opacity: 0; }
+  55%  { transform: translateY(0) scale(1);        opacity: 1; }
+  70%  { transform: translateY(-14px) scale(1.05); }
+  85%  { transform: translateY(0) scale(1); }
+  92%  { transform: translateY(-5px) scale(1.02); }
+  100% { transform: translateY(0) scale(1); }
+}
+.pin-drop {
+  animation: pin-drop 0.62s cubic-bezier(0.22, 0.9, 0.3, 1) forwards;
+  transform-origin: bottom center;
+}
+
+/* 着地時の衝撃リング */
+@keyframes pin-impact {
+  0%, 50% { transform: scale(0); opacity: 0; }
+  62%     { transform: scale(0.8); opacity: 0.55; }
+  100%    { transform: scale(1.8); opacity: 0; }
+}
+.pin-impact {
+  animation: pin-impact 0.62s ease-out forwards;
+}
+
 /* iOS momentum scroll */
 .scroll-touch {
   -webkit-overflow-scrolling: touch;
