@@ -3,15 +3,33 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import {
-  supabase, Group, MemberLocation,
+  supabase, Group, GroupMember, Pin,
   getStoredGroups, addStoredGroup, StoredGroup,
   uploadGroupPhoto, updateStoredGroupPhoto, updateStoredGroupName,
 } from '@/lib/supabase'
 import {
-  MapPin, Camera, Loader2, ChevronLeft, Users, Pencil, Check, Trash2, Home
+  MapPin, Camera, Loader2, ChevronLeft, Users, Pencil, Check, Home, X,
+  Utensils, Bed, Camera as CameraIcon, Droplets, ChevronRight,
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { ja } from 'date-fns/locale'
+
+const CATEGORY_LABEL: Record<string, string> = {
+  Eat: '食べる', Stay: '泊まる', Sightseeing: '観光', Onsen: '温泉', Here: '今ここ',
+}
+const STATUS_LABEL: Record<string, string> = {
+  Planned: '行きたい', Confirmed: '予約済', Visited: '行った',
+}
+const categoryIcon = (category: string, size = 16) => {
+  switch (category) {
+    case 'Eat': return <Utensils size={size} className="text-rose-600" />
+    case 'Stay': return <Bed size={size} className="text-emerald-600" />
+    case 'Sightseeing': return <CameraIcon size={size} className="text-sky-600" />
+    case 'Onsen': return <Droplets size={size} className="text-amber-600" />
+    case 'Here': return <Users size={size} className="text-violet-600" />
+    default: return <MapPin size={size} className="text-teal-600" />
+  }
+}
 
 export default function GroupDetailPage() {
   const params = useParams()
@@ -20,9 +38,11 @@ export default function GroupDetailPage() {
 
   const [group, setGroup] = useState<StoredGroup | null>(null)
   const [loadingGroup, setLoadingGroup] = useState(true)
-  const [members, setMembers] = useState<MemberLocation[]>([])
+  const [members, setMembers] = useState<GroupMember[]>([])
   const [membersLoading, setMembersLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [pins, setPins] = useState<Pin[]>([])
+  const [selectedMember, setSelectedMember] = useState<GroupMember | null>(null)
 
   // 名前編集
   const [editingName, setEditingName] = useState(false)
@@ -66,21 +86,32 @@ export default function GroupDetailPage() {
 
     const fetchMembers = async () => {
       setMembersLoading(true)
+      // 一度でも参加した全員を表示（group_members に永続記録）
       const { data } = await supabase
-        .from('member_locations')
+        .from('group_members')
         .select('*')
         .eq('group_id', groupId)
-        .order('updated_at', { ascending: false })
+        .order('joined_at', { ascending: true })
 
       if (data) {
-        setMembers(data as MemberLocation[])
+        setMembers(data as GroupMember[])
       }
       setMembersLoading(false)
     }
 
+    const fetchPins = async () => {
+      const { data } = await supabase.from('pins').select('*').eq('group_id', groupId)
+      if (data) setPins(data as Pin[])
+    }
+
     loadData()
     fetchMembers()
+    fetchPins()
   }, [groupId])
+
+  // 指定メンバーが追加したピン
+  const pinsByMember = (userId: string) =>
+    pins.filter(p => p.created_by === userId && p.category !== 'Here')
 
   // 写真変更処理
   const handleGroupPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -237,36 +268,116 @@ export default function GroupDetailPage() {
               </div>
             ) : members.length === 0 ? (
               <div className="py-8 text-center text-sm text-[var(--text-muted)] font-medium">
-                まだメンバーがいません。<br />位置情報を共有すると表示されます。
+                まだメンバーがいません。
               </div>
             ) : (
-              members.map((m, i) => (
-                <div
-                  key={m.user_id}
-                  className={`flex items-center gap-3 px-4 py-3.5 ${i > 0 ? 'border-t border-[var(--border-soft)]' : ''}`}
-                >
-                  <div
-                    className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center text-white font-bold flex-shrink-0"
-                    style={{ backgroundColor: group.color || '#88D8C0' }}
+              members.map((m, i) => {
+                const count = pinsByMember(m.user_id).length
+                return (
+                  <button
+                    key={m.user_id}
+                    onClick={() => setSelectedMember(m)}
+                    className={`w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-[var(--surface-sunken)] transition-colors ${i > 0 ? 'border-t border-[var(--border-soft)]' : ''}`}
                   >
-                    {m.avatar_url ? (
-                      <img src={m.avatar_url} alt={m.nickname} className="w-full h-full object-cover" />
-                    ) : (
-                      (m.nickname || '?').charAt(0).toUpperCase()
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-bold text-[var(--text-strong)] truncate text-sm">{m.nickname || '名無し'}</div>
-                    <div className="text-xs text-[var(--text-muted)] mt-0.5 font-medium">
-                      {m.updated_at ? `${formatDistanceToNow(new Date(m.updated_at), { addSuffix: true, locale: ja })}に更新` : ''}
+                    <div
+                      className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center text-white font-bold flex-shrink-0"
+                      style={{ backgroundColor: group.color || '#88D8C0' }}
+                    >
+                      {m.avatar_url ? (
+                        <img src={m.avatar_url} alt={m.nickname || ''} className="w-full h-full object-cover" />
+                      ) : (
+                        (m.nickname || '?').charAt(0).toUpperCase()
+                      )}
                     </div>
-                  </div>
-                </div>
-              ))
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold text-[var(--text-strong)] truncate text-sm">{m.nickname || '名無し'}</div>
+                      <div className="text-xs text-[var(--text-muted)] mt-0.5 font-medium">
+                        {count}件のスポットを追加
+                      </div>
+                    </div>
+                    <ChevronRight size={18} className="text-[var(--text-muted)] flex-shrink-0" />
+                  </button>
+                )
+              })
             )}
           </div>
         </div>
       </div>
+
+      {/* メンバー詳細オーバーレイ：名前 + 追加したピン一覧 */}
+      {selectedMember && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setSelectedMember(null)}
+          />
+          <div
+            className="relative bg-[var(--surface)] rounded-t-3xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col"
+            style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+          >
+            <div className="w-10 h-1 bg-[var(--border-soft)] rounded-full mx-auto mt-3 mb-1 flex-shrink-0" />
+            {/* メンバーヘッダー */}
+            <div className="px-6 pt-3 pb-4 flex items-center gap-3 border-b border-[var(--border-soft)] flex-shrink-0">
+              <div
+                className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center text-white text-lg font-bold flex-shrink-0"
+                style={{ backgroundColor: group.color || '#88D8C0' }}
+              >
+                {selectedMember.avatar_url ? (
+                  <img src={selectedMember.avatar_url} alt={selectedMember.nickname || ''} className="w-full h-full object-cover" />
+                ) : (
+                  (selectedMember.nickname || '?').charAt(0).toUpperCase()
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-extrabold text-[var(--text-strong)] text-lg truncate">{selectedMember.nickname || '名無し'}</div>
+                <div className="text-xs text-[var(--text-muted)] mt-0.5 font-medium">
+                  {selectedMember.joined_at
+                    ? `${formatDistanceToNow(new Date(selectedMember.joined_at), { addSuffix: true, locale: ja })}に参加`
+                    : ''}
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedMember(null)}
+                className="p-2 bg-[var(--surface-sunken)] rounded-full text-[var(--text-muted)] flex-shrink-0"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* 追加したピン一覧 */}
+            <div className="px-5 py-4 overflow-y-auto">
+              <h3 className="text-xs font-bold text-[var(--text-muted)] mb-2 px-1 tracking-wider uppercase">
+                追加したスポット（{pinsByMember(selectedMember.user_id).length}）
+              </h3>
+              {pinsByMember(selectedMember.user_id).length === 0 ? (
+                <div className="py-10 text-center text-sm text-[var(--text-muted)] font-medium">
+                  まだスポットを追加していません。
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {pinsByMember(selectedMember.user_id).map(p => (
+                    <div
+                      key={p.id}
+                      className="flex items-center gap-3 bg-[var(--surface-sunken)] rounded-2xl px-3 py-3 border border-[var(--border-soft)]"
+                    >
+                      <div className="w-9 h-9 rounded-xl bg-[var(--surface)] border border-[var(--border-soft)] flex items-center justify-center flex-shrink-0">
+                        {categoryIcon(p.category, 18)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-[var(--text-strong)] text-sm truncate">{p.title || '無題のスポット'}</div>
+                        <div className="text-[11px] text-[var(--text-muted)] mt-0.5">
+                          {CATEGORY_LABEL[p.category] ?? p.category}
+                          {p.status ? `・${STATUS_LABEL[p.status] ?? p.status}` : ''}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

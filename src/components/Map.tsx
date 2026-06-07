@@ -2,16 +2,14 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react'
 import {
-  APIProvider,
   Map,
   AdvancedMarker,
   useMap,
   useMapsLibrary,
 } from '@vis.gl/react-google-maps'
 import { Pin, MemberLocation } from '@/lib/supabase'
-import { MapPin, Utensils, Bed, Camera, Droplets, Crosshair, ChevronRight, X, Users, ListFilter, ChevronDown } from 'lucide-react'
+import { MapPin, Utensils, Bed, Camera, Droplets, Crosshair, ChevronRight, X, Users, ListFilter, ChevronDown, Route as RouteIcon } from 'lucide-react'
 
-const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''
 // AdvancedMarkerにはMap IDが必須。デモ用のDEMO_MAP_IDを利用
 const MAP_ID = process.env.NEXT_PUBLIC_GOOGLE_MAP_ID || 'DEMO_MAP_ID'
 
@@ -27,6 +25,11 @@ type MapComponentProps = {
   memberLocations?: MemberLocation[]
   searchCircle?: { lat: number, lng: number, radiusKm: number } | null
   mapTheme?: 'default' | 'dark'
+  // ルート最適化機能
+  routeDirections?: google.maps.DirectionsResult | null
+  routeOrderedPinIds?: string[]
+  showRoute?: boolean
+  onToggleShowRoute?: () => void
 }
 
 const CATEGORY_LABEL: Record<string, string> = {
@@ -92,6 +95,37 @@ const getCategoryColor = (category: string) => {
   }
 }
 
+// 最適化ルートの線を描画（DirectionsRenderer）
+function RouteOverlay({ directions }: { directions: google.maps.DirectionsResult }) {
+  const map = useMap()
+  const routesLib = useMapsLibrary('routes')
+  const rendererRef = useRef<google.maps.DirectionsRenderer | null>(null)
+
+  useEffect(() => {
+    if (!map || !routesLib) return
+    if (!rendererRef.current) {
+      rendererRef.current = new routesLib.DirectionsRenderer({
+        suppressMarkers: true, // 既存ピンと二重表示しない
+        preserveViewport: true, // 勝手にズーム/移動しない
+        polylineOptions: {
+          strokeColor: '#dc2626',
+          strokeWeight: 6,
+          strokeOpacity: 0.9,
+        },
+      })
+      rendererRef.current.setMap(map)
+    }
+    rendererRef.current.setDirections(directions)
+
+    return () => {
+      rendererRef.current?.setMap(null)
+      rendererRef.current = null
+    }
+  }, [map, routesLib, directions])
+
+  return null
+}
+
 // 検索範囲の半透明の円
 function SearchCircle({ center, radiusKm }: { center: { lat: number, lng: number }, radiusKm: number }) {
   const map = useMap()
@@ -149,30 +183,35 @@ export default function MapComponent(props: MapComponentProps) {
     setAddMode(false)
   }
 
+  // APIProvider は親（page.tsx）で1つだけ提供するため、ここでは包まない
   return (
-    <APIProvider apiKey={GOOGLE_MAPS_API_KEY}>
-      <div className="w-full h-full flex-1 relative">
-        <MapInnerWithMode
-          {...props}
-          addMode={addMode}
-          onAddPin={handleAddPin}
-          onToggleAddMode={() => setAddMode(!addMode)}
-        />
-      </div>
-    </APIProvider>
+    <div className="w-full h-full flex-1 relative">
+      <MapInnerWithMode
+        {...props}
+        addMode={addMode}
+        onAddPin={handleAddPin}
+        onToggleAddMode={() => setAddMode(!addMode)}
+      />
+    </div>
   )
 }
 
 type PinFilter = 'all' | 'plan' | 'memory'
 
+// このズーム以上に近づいたときだけ「行きたい」ピンの名前ラベルを表示
+const LABEL_ZOOM_THRESHOLD = 15
+
 function MapInnerWithMode({
   pins, onAddPin, onOpenSheet, popupPin, onClosePopup,
   centerLocation, userLocation, userAvatarUrl, memberLocations = [], searchCircle, mapTheme = 'default',
+  routeDirections, routeOrderedPinIds = [], showRoute = true, onToggleShowRoute,
   addMode, onToggleAddMode,
 }: MapComponentProps & { addMode: boolean, onToggleAddMode: () => void }) {
   const map = useMap()
   const [filter, setFilter] = useState<PinFilter>('all')
   const [filterOpen, setFilterOpen] = useState(false)
+  // 近くまでズームしたときだけ「行きたい」ピンの名前を表示する
+  const [labelsVisible, setLabelsVisible] = useState(false)
   const didInitialCenter = useRef(false)
 
   // 現在地を初めて取得したら、一度だけそこを初期位置にする
@@ -245,6 +284,21 @@ function MapInnerWithMode({
 
   return (
     <div className="w-full h-full relative">
+      {/* ルート表示トグル（左上・ルート計算後のみ表示。左上のフィルターボタンと被らないよう右にずらす） */}
+      {routeDirections && (
+        <button
+          onClick={() => onToggleShowRoute?.()}
+          className="absolute z-10 bg-white/95 backdrop-blur-md rounded-full shadow-lg border border-gray-100 pl-2.5 pr-3 py-2 flex items-center gap-1.5 active:scale-95 transition-all"
+          style={{ top: 'max(env(safe-area-inset-top, 0px) + 12px, 16px)', left: '60px' }}
+        >
+          <RouteIcon size={15} className={showRoute ? 'text-[#dc2626]' : 'text-gray-400'} />
+          <span className={`text-sm font-bold whitespace-nowrap ${showRoute ? 'text-gray-700' : 'text-gray-400'}`}>ルート</span>
+          <span className={`w-8 h-4 rounded-full relative transition-colors ${showRoute ? 'bg-[#dc2626]' : 'bg-gray-300'}`}>
+            <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${showRoute ? 'left-4' : 'left-0.5'}`} />
+          </span>
+        </button>
+      )}
+
       {/* ピンフィルター（右上ドロップダウン） */}
       <div
         className="absolute right-4 z-10 flex flex-col items-end"
@@ -290,6 +344,10 @@ function MapInnerWithMode({
         colorScheme={mapTheme === 'dark' ? 'DARK' : 'LIGHT'}
         style={{ width: '100%', height: '100%', cursor: addMode ? 'crosshair' : 'grab' }}
         onClick={handleMapClick}
+        onCameraChanged={(ev) => {
+          const v = ev.detail.zoom >= LABEL_ZOOM_THRESHOLD
+          setLabelsVisible(prev => (prev === v ? prev : v))
+        }}
       >
         <MapController centerLocation={centerLocation} />
         {searchCircle && (
@@ -298,6 +356,23 @@ function MapInnerWithMode({
             radiusKm={searchCircle.radiusKm}
           />
         )}
+
+        {/* 最適化ルートの線 */}
+        {showRoute && routeDirections && <RouteOverlay directions={routeDirections} />}
+
+        {/* ルートの巡回順を示す①②③番号バッジ */}
+        {showRoute && routeDirections && routeOrderedPinIds.map((id, idx) => {
+          const p = pins.find(x => x.id === id)
+          if (!p) return null
+          return (
+            <AdvancedMarker key={`route-num-${id}`} position={{ lat: p.lat, lng: p.lng }} zIndex={1500}>
+              {/* 元のピン（アイコン+ラベル）と被らないよう右上に大きくずらす */}
+              <div className="w-6 h-6 rounded-full bg-[#dc2626] text-white text-xs font-extrabold flex items-center justify-center border-2 border-white shadow-md" style={{ transform: 'translate(20px, -46px)' }}>
+                {idx + 1}
+              </div>
+            </AdvancedMarker>
+          )
+        })}
 
         {visiblePins.map(pin => (
           <AdvancedMarker
@@ -309,12 +384,16 @@ function MapInnerWithMode({
               <div className="flex flex-col items-center cursor-pointer">
                 <div className="relative w-12 h-12 flex items-center justify-center">
                   <div className="here-pulse-ring" />
-                  <div className="relative z-10 w-10 h-10 rounded-full bg-violet-500 border-2 border-white shadow-lg flex items-center justify-center">
-                    <Users size={20} className="text-white" />
+                  <div className="relative z-10 w-10 h-10 rounded-full bg-violet-500 border-2 border-white shadow-lg flex items-center justify-center overflow-hidden text-white text-sm font-bold">
+                    {pin.creator_avatar
+                      ? <img src={pin.creator_avatar} alt={pin.creator_name || ''} className="w-full h-full object-cover" />
+                      : pin.creator_name
+                        ? pin.creator_name.charAt(0).toUpperCase()
+                        : <Users size={20} className="text-white" />}
                   </div>
                 </div>
                 <div className="text-xs font-bold text-center mt-1 bg-violet-50 text-violet-700 px-2 py-0.5 rounded-full shadow-sm whitespace-nowrap border border-violet-200">
-                  {pin.title || '今ここにいるよ'}
+                  {pin.creator_name || pin.title || '今ここにいるよ'}
                 </div>
               </div>
             ) : pin.status === 'Visited' && pin.photo_url ? (
@@ -338,7 +417,7 @@ function MapInnerWithMode({
                   ${pin.status === 'Visited' ? 'border-orange-300 bg-orange-50' : `border-white ${getCategoryColor(pin.category)}`}`}>
                   {getCategoryIcon(pin.category, 24)}
                 </div>
-                {pin.title && (
+                {pin.title && (pin.status !== 'Planned' || labelsVisible) && (
                   <div className="text-xs font-bold text-center mt-1 bg-white/90 px-2 py-0.5 rounded-full shadow-sm whitespace-nowrap text-gray-800 border border-gray-100">
                     {pin.title}
                   </div>

@@ -263,6 +263,20 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete, on
               </div>
             </div>
 
+            {/* 作成者 */}
+            {pin?.id && pin?.creator_name && (
+              <div className="flex items-center gap-2 -mt-1">
+                <div className="w-6 h-6 rounded-full overflow-hidden flex items-center justify-center bg-[var(--color-primary)] text-white text-[10px] font-bold flex-shrink-0">
+                  {pin.creator_avatar
+                    ? <img src={pin.creator_avatar} alt={pin.creator_name} className="w-full h-full object-cover" />
+                    : pin.creator_name.charAt(0).toUpperCase()}
+                </div>
+                <span className="text-xs text-[var(--text-muted)]">
+                  <span className="font-bold text-[var(--text-strong)]">{pin.creator_name}</span> さんが追加
+                </span>
+              </div>
+            )}
+
             <div className="space-y-4 mt-2">
               <div>
                 <div className="flex justify-between items-center mb-2">

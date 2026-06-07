@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useMemo } from 'react'
 import { useParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
-import { supabase, Pin, MemberLocation, getUserId, addStoredGroup, getStoredGroups, StoredGroup } from '@/lib/supabase'
+import { supabase, Pin, MemberLocation, getUserId, addStoredGroup, getStoredGroups, StoredGroup, upsertGroupMember, SavedRoute } from '@/lib/supabase'
 import MapFilterPanel, { PinCategory, FILTER_CATEGORIES } from '@/components/MapFilterPanel'
 import BottomSheet from '@/components/BottomSheet'
 import Timeline from '@/components/Timeline'
@@ -14,11 +14,52 @@ import HereWidget from '@/components/HereWidget'
 import Settings, { ThemeColor, MapStyle } from '@/components/Settings'
 import AiSearchOverlay from '@/components/AiSearchOverlay'
 import GroupsList from '@/components/GroupsList'
+import RoutePlanner from '@/components/RoutePlanner'
+import { RouteResult, computeRouteForOrder } from '@/lib/route'
+import { Route as RouteIcon } from 'lucide-react'
+import { APIProvider, useMap, useMapsLibrary } from '@vis.gl/react-google-maps'
+
+const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''
 
 const MapComponent = dynamic(() => import('@/components/Map'), { ssr: false })
 
 const LOCATION_TTL_MS = 5 * 60 * 1000 // 5分以上更新がなければ非表示
 const SHARE_INTERVAL_MS = 15_000
+
+// 保存済みルートを選んだときに、順番どおり再計算して地図に表示する（APIProvider配下で動作）
+function RouteLoader({
+  pending, pins, onResult,
+}: {
+  pending: SavedRoute | null
+  pins: Pin[]
+  onResult: (res: RouteResult | null, orderedIds: string[]) => void
+}) {
+  const map = useMap()
+  const routesLib = useMapsLibrary('routes')
+
+  useEffect(() => {
+    if (!pending || !routesLib) return
+    let cancelled = false
+    const ordered = pending.pin_ids
+      .map(id => pins.find(p => p.id === id))
+      .filter(Boolean) as Pin[]
+    if (ordered.length < 2) {
+      onResult(null, pending.pin_ids)
+      return
+    }
+    computeRouteForOrder(ordered, pending.mode, routesLib)
+      .then(res => {
+        if (cancelled) return
+        onResult(res, pending.pin_ids)
+        const bounds = res.directions.routes[0]?.bounds
+        if (map && bounds) map.fitBounds(bounds, 60)
+      })
+      .catch(() => { if (!cancelled) onResult(null, pending.pin_ids) })
+    return () => { cancelled = true }
+  }, [pending, routesLib, pins, map])
+
+  return null
+}
 
 export default function MapPage() {
   const params = useParams()
@@ -42,6 +83,13 @@ export default function MapPage() {
   const [mapStyle, setMapStyle] = useState<MapStyle>('default')
   const [searchCircle, setSearchCircle] = useState<{lat: number, lng: number, radiusKm: number} | null>(null)
   const [aiSelect, setAiSelect] = useState<{lat: number, lng: number, category: string} | null>(null)
+
+  // ルート最適化
+  const [routeDirections, setRouteDirections] = useState<google.maps.DirectionsResult | null>(null)
+  const [routeOrderedPinIds, setRouteOrderedPinIds] = useState<string[]>([])
+  const [showRoute, setShowRoute] = useState(true)
+  const [isRoutePlannerOpen, setIsRoutePlannerOpen] = useState(false)
+  const [pendingRoute, setPendingRoute] = useState<SavedRoute | null>(null)
 
   const [nickname, setNickname] = useState<string | null>(null)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
@@ -89,6 +137,12 @@ export default function MapPage() {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', themeColor)
   }, [themeColor])
+
+  // グループ参加を永続記録（メンバー一覧用。位置共有とは別に保持される）
+  useEffect(() => {
+    if (!nickname || !groupId) return
+    upsertGroupMember(groupId, getUserId(), nickname, avatarUrl)
+  }, [nickname, avatarUrl, groupId])
 
   // GPS監視
   useEffect(() => {
@@ -323,6 +377,9 @@ export default function MapPage() {
         photo_url: pinData.photo_url,
         reactions: pinData.reactions,
         scheduled_at: pinData.scheduled_at,
+        created_by: getUserId(),
+        creator_name: nickname,
+        creator_avatar: avatarUrl,
       }])
       if (error) console.error(error)
       // 新規ピンの位置へマップを移動
@@ -346,6 +403,26 @@ export default function MapPage() {
     }
   }
 
+  // ルート計算完了：地図に表示する
+  const handleRouteComputed = (result: RouteResult | null) => {
+    setRouteDirections(result?.directions ?? null)
+    setRouteOrderedPinIds(result?.orderedPinIds ?? [])
+    if (result) setShowRoute(true)
+  }
+
+  // タイムラインから保存済みルートを選択 → マップに表示
+  const handleSelectRoute = (route: SavedRoute) => {
+    setPopupPin(null)
+    setPendingRoute(route)
+    setActiveTab('map')
+  }
+  const handleRouteLoaded = (res: RouteResult | null, orderedIds: string[]) => {
+    setRouteDirections(res?.directions ?? null)
+    setRouteOrderedPinIds(res ? res.orderedPinIds : orderedIds)
+    setShowRoute(true)
+    setPendingRoute(null)
+  }
+
   // タブ切り替え：マップを選んだら常に現在地から表示する
   const handleTabChange = (tab: 'map' | 'groups' | 'timeline' | 'settings') => {
     if (tab === 'map' && userLocationRef.current) {
@@ -356,6 +433,7 @@ export default function MapPage() {
   }
 
   return (
+    <APIProvider apiKey={GOOGLE_MAPS_API_KEY}>
     <div className="relative w-full h-screen overflow-hidden bg-[var(--bg-app)] flex flex-col">
       {showNicknameModal && (
         <NicknameModal onConfirm={(name, avatar) => {
@@ -380,6 +458,10 @@ export default function MapPage() {
             memberLocations={memberLocations}
             searchCircle={searchCircle}
             mapTheme={mapStyle}
+            routeDirections={routeDirections}
+            routeOrderedPinIds={routeOrderedPinIds}
+            showRoute={showRoute}
+            onToggleShowRoute={() => setShowRoute(v => !v)}
           />
           <MapFilterPanel
             groups={storedGroups}
@@ -391,6 +473,16 @@ export default function MapPage() {
           />
           <CountdownWidget pins={pins} onPinSelect={handleShowPopup} />
           <HereWidget pins={pins} onSelectPin={handleShowPopup} />
+
+          {/* ルート起動ボタン（右下・スポット追加/現在地ボタンの並び） */}
+          <button
+            onClick={() => setIsRoutePlannerOpen(true)}
+            className="absolute right-4 bottom-[160px] bg-white p-3.5 rounded-full shadow-lg active:scale-95 transition-all z-10 border border-gray-100"
+            aria-label="ルートを計画"
+          >
+            <RouteIcon size={24} className="text-[#dc2626]" />
+          </button>
+
           {aiSelect && (
             <AiSearchOverlay
               center={{ lat: aiSelect.lat, lng: aiSelect.lng }}
@@ -403,13 +495,29 @@ export default function MapPage() {
         </div>
       </div>
 
+      {/* 保存済みルートの読み込み（再計算して地図表示） */}
+      <RouteLoader pending={pendingRoute} pins={pins} onResult={handleRouteLoaded} />
+
+      {/* ルート計画パネル */}
+      <RoutePlanner
+        isOpen={isRoutePlannerOpen}
+        onClose={() => setIsRoutePlannerOpen(false)}
+        pins={pins}
+        groupId={groupId}
+        creatorName={nickname}
+        creatorAvatar={avatarUrl}
+        onRouteComputed={handleRouteComputed}
+      />
+
       {/* タイムライン画面（開くたびに最初の状態に戻すため、非表示時はアンマウント） */}
       {activeTab === 'timeline' && (
         <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
           <Timeline
             pins={pins}
+            groupId={groupId}
             onSelectPin={handleShowPopup}
             onDeletePin={handleDeletePin}
+            onSelectRoute={handleSelectRoute}
           />
         </div>
       )}
@@ -456,5 +564,6 @@ export default function MapPage() {
         onStartAiSelect={handleStartAiSelect}
       />
     </div>
+    </APIProvider>
   )
 }

@@ -39,7 +39,7 @@ export default function CountdownWidget({ pins, onPinSelect }: CountdownWidgetPr
 
   return (
     <div
-      className="absolute right-4 bottom-[168px] z-20 flex flex-col-reverse items-end gap-2"
+      className="absolute right-4 bottom-[224px] z-20 flex flex-col-reverse items-end gap-2"
     >
       {/* カレンダーアイコン（常時表示・下に固定、ピン追加ボタンの上） */}
       <button

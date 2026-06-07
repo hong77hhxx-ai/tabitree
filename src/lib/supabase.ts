@@ -19,6 +19,10 @@ export type Pin = {
   reactions: Record<string, number> | null
   scheduled_at: string | null
   created_at: string
+  // 作成者情報（認証なしのため作成時にスナップショットを保存）
+  created_by: string | null
+  creator_name: string | null
+  creator_avatar: string | null
 }
 
 export const uploadPhoto = async (file: File, pinId: string): Promise<string | null> => {
@@ -132,6 +136,46 @@ export type MemberLocation = {
   lat: number
   lng: number
   updated_at: string
+}
+
+// 保存された最適化ルート（タイムラインで一覧表示）
+export type SavedRoute = {
+  id: string
+  group_id: string
+  name: string
+  mode: 'WALKING' | 'DRIVING'
+  pin_ids: string[]
+  total_distance_m: number | null
+  total_duration_s: number | null
+  created_by: string | null
+  creator_name: string | null
+  creator_avatar: string | null
+  created_at: string
+}
+
+// 一度でも参加した（マップを開いた）メンバーの永続記録
+export type GroupMember = {
+  id: string
+  group_id: string
+  user_id: string
+  nickname: string | null
+  avatar_url: string | null
+  joined_at: string
+  updated_at: string
+}
+
+// グループ参加を記録（マップを開いたときに呼ぶ）
+export const upsertGroupMember = async (
+  groupId: string, userId: string, nickname: string | null, avatarUrl: string | null
+) => {
+  if (!groupId || !userId) return
+  await supabase.from('group_members').upsert({
+    group_id: groupId,
+    user_id: userId,
+    nickname,
+    avatar_url: avatarUrl,
+    updated_at: new Date().toISOString(),
+  }, { onConflict: 'group_id,user_id' })
 }
 
 export const uploadAvatar = async (file: File, userId: string): Promise<string | null> => {

@@ -44,16 +44,20 @@ export default function HereWidget({ pins, onSelectPin }: HereWidgetProps) {
                   onClick={() => { onSelectPin(pin); setIsOpen(false) }}
                   className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-violet-500/10 active:bg-violet-500/20 transition-colors text-left"
                 >
-                  <div className="w-8 h-8 rounded-full bg-violet-500 flex items-center justify-center flex-shrink-0">
-                    <Users size={14} className="text-white" />
+                  <div className="w-8 h-8 rounded-full bg-violet-500 flex items-center justify-center flex-shrink-0 overflow-hidden text-white text-xs font-bold">
+                    {pin.creator_avatar
+                      ? <img src={pin.creator_avatar} alt={pin.creator_name || ''} className="w-full h-full object-cover" />
+                      : pin.creator_name
+                        ? pin.creator_name.charAt(0).toUpperCase()
+                        : <Users size={14} className="text-white" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-bold text-[var(--text-strong)] truncate">
-                      {pin.title || 'ここにいるよ'}
+                      {pin.creator_name || pin.title || 'ここにいるよ'}
                     </div>
-                    {pin.notes && (
-                      <div className="text-xs text-[var(--text-muted)] truncate">{pin.notes}</div>
-                    )}
+                    <div className="text-xs text-[var(--text-muted)] truncate">
+                      {pin.title || 'ここにいるよ'}{pin.notes ? `・${pin.notes}` : ''}
+                    </div>
                   </div>
                 </button>
               ))}
