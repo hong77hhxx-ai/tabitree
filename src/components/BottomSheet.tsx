@@ -1,6 +1,7 @@
 'use client'
 
 import { Pin, uploadPhoto, supabase, getMyReaction, setMyReaction } from '@/lib/supabase'
+import { useSwipeDownToClose } from '@/lib/useSwipeDown'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Save, MapPin, Utensils, Bed, Camera, Droplets, Sparkles, Loader2, ImagePlus, CheckCircle, Heart, ThumbsUp, Smile, Navigation, Calendar, Clock, Trash2, Users } from 'lucide-react'
 import { useState, useEffect } from 'react'
@@ -35,6 +36,7 @@ const HERE_DURATIONS = [
 const STATUSES = ['Planned', 'Visited']
 
 export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete, onSearchRadiusChange, onStartAiSelect }: BottomSheetProps) {
+  const { dragProps, startDrag } = useSwipeDownToClose(onClose)
   const [formData, setFormData] = useState<Partial<Pin>>({})
   const [selectedDuration, setSelectedDuration] = useState<string | null>(null)
   const [suggestions, setSuggestions] = useState<any[]>([])
@@ -236,8 +238,11 @@ export default function BottomSheet({ isOpen, onClose, pin, onSave, onDelete, on
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            {...dragProps}
             className="absolute bottom-0 left-0 right-0 mx-auto w-full max-w-lg bg-[var(--surface)] rounded-t-3xl shadow-xl z-50 p-6 flex flex-col gap-4 max-h-[85vh] overflow-y-auto overflow-x-hidden overscroll-contain"
           >
+            {/* 下スワイプで閉じるハンドル */}
+            <div className="w-10 h-1.5 bg-[var(--border-soft)] rounded-full mx-auto -mt-2 mb-1 cursor-grab touch-none" onPointerDown={startDrag} />
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-bold text-[var(--text-strong)] flex items-center gap-2">
                 <MapPin className="text-[var(--color-primary)]" />

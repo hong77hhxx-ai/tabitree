@@ -22,6 +22,8 @@ type MapComponentProps = {
   onTapPin?: (pin: Pin) => void
   // 「行きたい」ピンの長押し（思い出に変更の確認へ）
   onLongPressPin?: (pin: Pin) => void
+  // 思い出ビューを開く（カードの「思い出を見る」）
+  onOpenMemory?: (pin: Pin) => void
   popupPin?: Pin | null
   onClosePopup?: () => void
   centerLocation?: { lat: number, lng: number } | null
@@ -199,7 +201,7 @@ export default function MapComponent(props: MapComponentProps) {
 const LABEL_ZOOM_THRESHOLD = 15
 
 function MapInnerWithMode({
-  pins, onAddPin, onOpenSheet, onTapPin, onLongPressPin, popupPin, onClosePopup,
+  pins, onAddPin, onOpenSheet, onTapPin, onLongPressPin, onOpenMemory, popupPin, onClosePopup,
   centerLocation, userLocation, userAvatarUrl, memberLocations = [], searchCircle, mapTheme = 'default',
   routeDirections, routeOrderedPinIds = [], showRoute = true, onAddPlace, onQuickVisit,
   droppingPin,
@@ -213,9 +215,12 @@ function MapInnerWithMode({
   // ピンの長押し検出（行きたい → 思い出 の確認）
   const pinPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pinLongPressFired = useRef(false)
+  // ピンを押している間はマップの長押し（新規ピン追加）を抑制する
+  const pinPressActive = useRef(false)
   const startPinPress = (pin: Pin) => {
-    if (pin.category === 'Here' || pin.status === 'Visited') return
+    pinPressActive.current = true // どのピンでもマップの追加は抑制
     pinLongPressFired.current = false
+    if (pin.category === 'Here' || pin.status === 'Visited') return // 確認は「行きたい」のみ
     if (pinPressTimer.current) clearTimeout(pinPressTimer.current)
     pinPressTimer.current = setTimeout(() => {
       pinLongPressFired.current = true
@@ -223,6 +228,7 @@ function MapInnerWithMode({
     }, 500)
   }
   const cancelPinPress = () => {
+    pinPressActive.current = false
     if (pinPressTimer.current) { clearTimeout(pinPressTimer.current); pinPressTimer.current = null }
   }
 
@@ -250,6 +256,8 @@ function MapInnerWithMode({
       pressLatLng = { lat: ll.lat(), lng: ll.lng() }
       clear()
       timer = setTimeout(() => {
+        // ピン上の長押しのときは新規ピンを追加しない
+        if (pinPressActive.current) return
         if (pressLatLng) onAddPinRef.current(pressLatLng.lat, pressLatLng.lng)
       }, 500)
     })
@@ -384,6 +392,12 @@ function MapInnerWithMode({
               (onTapPin ?? onOpenSheet)(pin)
             }}
           >
+            <div
+              onPointerDown={(e) => { e.stopPropagation(); startPinPress(pin) }}
+              onPointerUp={cancelPinPress}
+              onPointerLeave={cancelPinPress}
+              onPointerCancel={cancelPinPress}
+            >
             {pin.category === 'Here' ? (
               <div className="flex flex-col items-center cursor-pointer">
                 <div className="relative w-12 h-12 flex items-center justify-center">
@@ -415,14 +429,8 @@ function MapInnerWithMode({
                 <div className="w-0 h-0 border-l-[5px] border-r-[5px] border-t-[7px] border-l-transparent border-r-transparent border-t-orange-300" />
               </div>
             ) : (
-              // 透明な余白(p-2)でタップ判定を広げる。長押しで「思い出に変更」確認
-              <div
-                className="flex flex-col items-center cursor-pointer p-2 -m-2"
-                onPointerDown={(e) => { e.stopPropagation(); startPinPress(pin) }}
-                onPointerUp={cancelPinPress}
-                onPointerLeave={cancelPinPress}
-                onPointerCancel={cancelPinPress}
-              >
+              // 透明な余白(p-2)でタップ判定を広げる
+              <div className="flex flex-col items-center cursor-pointer p-2 -m-2">
                 <div className={`p-3 rounded-full shadow-md flex items-center justify-center border-2
                   ${pin.status === 'Visited' ? 'border-orange-300 bg-orange-50' : `border-white ${getCategoryColor(pin.category)}`}`}>
                   {getCategoryIcon(pin.category, 24)}
@@ -434,12 +442,18 @@ function MapInnerWithMode({
                 )}
               </div>
             )}
+            </div>
           </AdvancedMarker>
         ))}
 
         {popupPin && (
           <AdvancedMarker position={{ lat: popupPin.lat, lng: popupPin.lng }} zIndex={1000}>
-            <div className="relative bg-[var(--surface)] rounded-2xl shadow-xl overflow-hidden w-56 border border-[var(--border-soft)] mb-12">
+            <div
+              className="relative bg-[var(--surface)] rounded-2xl shadow-xl overflow-hidden w-56 border border-[var(--border-soft)] mb-12"
+              onPointerDown={(e) => e.stopPropagation()}
+              onPointerUp={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+            >
               {popupPin.photo_url && (
                 <div className="w-full h-28 overflow-hidden">
                   <img src={popupPin.photo_url} alt={popupPin.title} className="w-full h-full object-cover" />
@@ -465,7 +479,16 @@ function MapInnerWithMode({
                 {popupPin.notes && (
                   <div className="text-xs text-[var(--text-muted)] line-clamp-2 mb-2">{popupPin.notes}</div>
                 )}
-                {/* ワンタップで「行きたい」→「思い出」 */}
+                {/* 思い出ピン：思い出を見る */}
+                {popupPin.category !== 'Here' && popupPin.status === 'Visited' && (
+                  <button
+                    onClick={() => onOpenMemory?.(popupPin)}
+                    className="w-full flex items-center justify-center gap-1 bg-gradient-to-r from-orange-400 to-amber-500 text-white text-xs font-bold py-2 rounded-xl transition-all mb-1.5 active:scale-[0.98]"
+                  >
+                    思い出を見る <ChevronRight size={14} />
+                  </button>
+                )}
+                {/* 行きたいピン：ワンタップで思い出に */}
                 {popupPin.category !== 'Here' && popupPin.status !== 'Visited' && (
                   <button
                     onClick={() => onQuickVisit?.(popupPin)}

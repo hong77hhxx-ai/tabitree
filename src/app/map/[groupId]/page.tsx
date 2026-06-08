@@ -382,15 +382,16 @@ export default function MapPage() {
     [pins]
   )
 
-  // ピンのタップ：思い出（Visited）は専用ビュー、それ以外は編集シート
+  // ピンのタップ：まずカード（ポップアップ）を表示する
   const handleTapPin = (pin: Pin) => {
-    if (pin.status === 'Visited') {
-      setPopupPin(null)
-      setMemoryPin(pin)
-      setCenterLocation({ lat: pin.lat, lng: pin.lng })
-    } else {
-      handleOpenSheet(pin)
-    }
+    handleShowPopup(pin)
+  }
+
+  // カードの「思い出を見る」：思い出専用ビューを開く
+  const handleOpenMemory = (pin: Pin) => {
+    setPopupPin(null)
+    setMemoryPin(pin)
+    setCenterLocation({ lat: pin.lat, lng: pin.lng })
   }
 
   // 思い出ビューのスワイプ：別の思い出に切替＋マップを該当ピンへ移動
@@ -541,6 +542,7 @@ export default function MapPage() {
             onOpenSheet={handleOpenSheet}
             onTapPin={handleTapPin}
             onLongPressPin={handleLongPressPin}
+            onOpenMemory={handleOpenMemory}
             popupPin={popupPin}
             onClosePopup={() => setPopupPin(null)}
             centerLocation={centerLocation}

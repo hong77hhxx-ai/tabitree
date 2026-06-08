@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useMapsLibrary } from '@vis.gl/react-google-maps'
 import { Pin, supabase, getUserId } from '@/lib/supabase'
+import { useSwipeDownToClose } from '@/lib/useSwipeDown'
 import {
   computeRoute, routeCacheKey, getCachedRoute, saveRoute, RouteResult, TravelMode, googleMapsDirUrl,
 } from '@/lib/route'
@@ -38,6 +39,7 @@ const catIcon = (category: string, size = 16) => {
 export default function RoutePlanner({
   isOpen, onClose, pins, groupId, creatorName, creatorAvatar, onRouteComputed, onRouteSaved,
 }: RoutePlannerProps) {
+  const { dragProps, startDrag } = useSwipeDownToClose(onClose)
   const routesLibrary = useMapsLibrary('routes')
 
   const [selected, setSelected] = useState<string[]>([])
@@ -165,10 +167,11 @@ export default function RoutePlanner({
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 26, stiffness: 240 }}
+            {...dragProps}
             className="relative bg-[var(--surface)] rounded-t-3xl shadow-2xl w-full max-w-lg flex flex-col max-h-[88vh]"
             style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
           >
-            <div className="w-10 h-1 bg-[var(--border-soft)] rounded-full mx-auto mt-3 mb-1 flex-shrink-0" />
+            <div className="w-10 h-1.5 bg-[var(--border-soft)] rounded-full mx-auto mt-3 mb-1 flex-shrink-0 cursor-grab touch-none py-1 box-content" onPointerDown={startDrag} />
 
             {/* ヘッダー */}
             <div className="px-6 pt-3 pb-4 flex items-center justify-between flex-shrink-0">

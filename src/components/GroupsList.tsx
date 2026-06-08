@@ -39,6 +39,7 @@ export default function GroupsList({ currentGroupId }: GroupsListProps) {
 
   const [errorMsg, setErrorMsg] = useState('')
   const [uploadingId, setUploadingId] = useState<string | null>(null)
+  const [fabOpen, setFabOpen] = useState(false)
 
   useEffect(() => {
     const stored = getStoredGroups()
@@ -152,6 +153,8 @@ export default function GroupsList({ currentGroupId }: GroupsListProps) {
     setCreatePhotoPreview(null)
   }
 
+  const { dragProps: formDragProps, startDrag: formStartDrag } = useSwipeDownToClose(closeForm)
+
   const handleCreatePhotoPick = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     e.target.value = ''
@@ -164,7 +167,7 @@ export default function GroupsList({ currentGroupId }: GroupsListProps) {
 
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 bg-[var(--surface-muted-2)] overflow-y-auto">
+    <div className="flex-1 flex flex-col min-h-0 bg-[var(--surface-muted-2)] relative overflow-hidden">
       {/* ヘッダー */}
       <div className="px-6 pt-6 pb-4 bg-[var(--surface)] border-b border-[var(--border-soft)] flex-shrink-0">
         <h1 className="text-xl font-extrabold text-[var(--text-strong)] flex items-center gap-2">
@@ -274,24 +277,56 @@ export default function GroupsList({ currentGroupId }: GroupsListProps) {
         )}
       </div>
 
-      {/* アクションボタン */}
-      <div className="flex-shrink-0 px-5 pb-8 pt-4 bg-[var(--surface)] border-t border-[var(--border-soft)] flex flex-col gap-3">
+      {/* ＋FAB（右下）：新しいマップを作る / URLで参加 をまとめる */}
+      <div className="absolute right-5 bottom-6 z-30 flex flex-col items-end gap-3">
+        <AnimatePresence>
+          {fabOpen && (
+            <>
+              <motion.button
+                key="join"
+                initial={{ opacity: 0, y: 12, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 12, scale: 0.9 }}
+                transition={{ delay: 0.03 }}
+                onClick={() => { setFabOpen(false); closeForm(); setMode('join') }}
+                className="flex items-center gap-2 bg-[var(--surface)] text-[var(--text-strong)] font-bold pl-4 pr-3 py-3 rounded-2xl shadow-lg border border-[var(--border-soft)] active:scale-95 transition-transform"
+              >
+                URLで参加する
+                <span className="w-9 h-9 rounded-full bg-[var(--surface-sunken)] flex items-center justify-center">
+                  <Link2 size={18} className="text-[var(--text-strong)]" />
+                </span>
+              </motion.button>
+              <motion.button
+                key="create"
+                initial={{ opacity: 0, y: 12, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 12, scale: 0.9 }}
+                onClick={() => { setFabOpen(false); closeForm(); setMode('create') }}
+                className="flex items-center gap-2 text-white font-bold pl-4 pr-3 py-3 rounded-2xl shadow-lg active:scale-95 transition-transform"
+                style={{ backgroundColor: 'var(--accent)' }}
+              >
+                新しいマップを作る
+                <span className="w-9 h-9 rounded-full bg-white/25 flex items-center justify-center">
+                  <Plus size={20} className="text-white" />
+                </span>
+              </motion.button>
+            </>
+          )}
+        </AnimatePresence>
         <button
-          onClick={() => { closeForm(); setMode('create') }}
-          className="w-full text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-md text-base active:opacity-90"
-          style={{ backgroundColor: 'var(--accent)' }}
+          onClick={() => setFabOpen(v => !v)}
+          className="w-14 h-14 rounded-full text-white flex items-center justify-center shadow-xl active:scale-95 transition-transform"
+          style={{ backgroundColor: 'var(--color-primary)' }}
+          aria-label="グループを追加"
         >
-          <Plus size={22} />
-          新しいマップを作る
-        </button>
-        <button
-          onClick={() => { closeForm(); setMode('join') }}
-          className="w-full bg-[var(--surface)] active:opacity-80 text-[var(--text-strong)] font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all border border-[var(--border-soft)] text-base"
-        >
-          <Link2 size={20} />
-          URLで参加する
+          <Plus size={28} className={`transition-transform ${fabOpen ? 'rotate-45' : ''}`} />
         </button>
       </div>
+
+      {/* FABを開いたときの背景（タップで閉じる） */}
+      {fabOpen && (
+        <div className="absolute inset-0 z-20" onClick={() => setFabOpen(false)} />
+      )}
 
       {/* フォーム（ボトムシート/モーダル） */}
       <AnimatePresence>
@@ -309,10 +344,11 @@ export default function GroupsList({ currentGroupId }: GroupsListProps) {
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 26, stiffness: 240 }}
+              {...formDragProps}
               className="relative bg-[var(--surface)] rounded-t-3xl shadow-2xl w-full max-w-lg px-6 pt-5"
               style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 2rem)' }}
             >
-              <div className="w-10 h-1 bg-[var(--border-soft)] rounded-full mx-auto mb-5" />
+              <div className="w-10 h-1.5 bg-[var(--border-soft)] rounded-full mx-auto mb-5 cursor-grab touch-none py-1 box-content" onPointerDown={formStartDrag} />
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-lg font-bold text-[var(--text-strong)]">
                   {mode === 'create' ? '新しいマップを作る' : 'URLで参加する'}

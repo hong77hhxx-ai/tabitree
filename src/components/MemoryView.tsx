@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, Pencil, Calendar, ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
+import { useSwipeDownToClose } from '@/lib/useSwipeDown'
 
 type MemoryViewProps = {
   pin: Pin | null
@@ -22,6 +23,7 @@ const slideVariants = {
 }
 
 export default function MemoryView({ pin, memories, onClose, onEdit, onChange }: MemoryViewProps) {
+  const { dragProps, startDrag } = useSwipeDownToClose(onClose)
   const [direction, setDirection] = useState(0)
 
   const idx = pin ? memories.findIndex(m => m.id === pin.id) : -1
@@ -56,10 +58,11 @@ export default function MemoryView({ pin, memories, onClose, onEdit, onChange }:
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 26, stiffness: 240 }}
+            {...dragProps}
             className="relative bg-[var(--surface)] rounded-t-3xl shadow-2xl w-full max-w-lg flex flex-col max-h-[88vh] overflow-hidden"
             style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
           >
-            <div className="w-10 h-1 bg-[var(--border-soft)] rounded-full mx-auto mt-3 mb-1 flex-shrink-0" />
+            <div className="w-10 h-1.5 bg-[var(--border-soft)] rounded-full mx-auto mt-3 mb-1 flex-shrink-0 cursor-grab touch-none py-1 box-content" onPointerDown={startDrag} />
 
             {/* ヘッダー */}
             <div className="px-6 pt-2 pb-3 flex items-center justify-between flex-shrink-0">
